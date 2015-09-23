@@ -122,6 +122,8 @@ def crop(ifile,mstring,aminoacids):
 	u=MD.Universe(ifile)
 	segments=list(set([s.name for s in u.segments]))
 	print 'File: {}, segments: {}'.format(iname,segments)
+	
+	#sys.exit(1)
 	sg=u.selectAtoms('segid {}'.format(segments[0]))
 	p=sg.selectAtoms('protein')
 	het=sg.selectAtoms('not protein')
@@ -149,7 +151,10 @@ def crop(ifile,mstring,aminoacids):
 	print "Longest matching chain:\n{}\n\n".format('\n'.join(tw.wrap(segg,50)))
 	#sys.exit(1)
 	new=MD.Merge(segment, het)
+	clean=MD.Merge(p,het)
 	new.atoms.write(iname+'_'+mstring[0:4]+str(len(mstring))+'_cropped.pdb')
+	clean.atoms.write(iname+'_'+mstring[0:4]+str(len(mstring))+'_cleaned.pdb')
+
 	logf=open(iname+'_'+mstring[0:4]+str(len(mstring))+'_log.txt','w')
 	log="Input PDB: {}\nReference amino acid chain:\n{}\n\nAlignment:\n{}\nLongest match: {}\nLongest matching chain:\n{}".format(ifile,'\n'.join(tw.wrap(mstring,50)),aligned,len(segment.resnames()),'\n'.join(tw.wrap(segg,50)))
 	logf.write(log)
