@@ -175,33 +175,34 @@ def main(argv=None):
 
 	try:
 		if ifile!="":
-			ipath, iname, itype = filename(ifile)			
-		else:
-			raise Exception("No input file specified.")
-		if iname == "" and itype=="" : # 
-			raise Exception("No input file specified.")
-		elif iname=='' and itype!='':
-			print "Working directory is expected to contain files of %(itype)s!" % vars()
-			pqrfl=glob.glob("./*.%(itype)s" % vars())
-			if len(pqrfl)==0:
-				raise Exception("No *.%(itype)s files found in working directory!" % vars())
-			else:
-				print "Found {} files working directory!".format(len(pqrfl))
-		elif not os.path.exists(ifile):
-			raise Exception("Input file or directory does not exist.")
-		elif os.path.isfile(ifile):			
-			if not itype in ("pqr", "pdb"):
-				print "File %(ifile)s is not supported" % vars()
-			else:
-				print "File %(ifile)s is expected to be a structure file" % vars()
+			ipath, iname, itype = filename(ifile)
+			if iname == "" and itype=="" : # 
+				raise Exception("No input file specified.")
+			elif iname=='' and itype!='':
+				print "Working directory is expected to contain files of %(itype)s!" % vars()
+				pqrfl=glob.glob("./*.%(itype)s" % vars())
+				if len(pqrfl)==0:
+					raise Exception("No *.%(itype)s files found in working directory!" % vars())
+				else:
+					print "Found {} files working directory!".format(len(pqrfl))
+			elif not os.path.exists(ifile):
+				raise Exception("Input file or directory does not exist.")
+			elif os.path.isfile(ifile):			
+				if not itype in ("pqr", "pdb"):
+					print "File %(ifile)s is not supported" % vars()
+				else:
+					print "File %(ifile)s is expected to be a structure file" % vars()
 
-		elif os.path.isdir(ifile):
-			print "%(ifile)s is expected to be a directory with pqr files!" % vars()
-			pqrfl=glob.glob(ifile+"/*.pqr")
-			if len(pqrfl)==0:
-				raise Exception("No .pqr files found in directory %(ifile)s!")
-			else:
-				print "Found {} files in {} directory!".format(len(pqrfl),ifile)
+			elif os.path.isdir(ifile):
+				print "%(ifile)s is expected to be a directory with pqr files!" % vars()
+				pqrfl=glob.glob(ifile+"/*.pqr")
+				if len(pqrfl)==0:
+					raise Exception("No .pqr files found in directory %(ifile)s!")
+				else:
+					print "Found {} files in {} directory!".format(len(pqrfl),ifile)		
+		elif not load:
+			raise Exception("No input file specified.")
+		
 	
 		if rfile!='':
 			if rfile=='all':
@@ -231,25 +232,25 @@ def main(argv=None):
 
 
 	print optionsset %vars()
-	
-	if sfile!='' and os.path.isfile(ifile):
-		spath, sname, stype = filename(sfile)
-		setf=open(sfile,'r')
-		settmp=setf.read()
-		setf.close()
+	if not load :
+		if sfile!='' and os.path.isfile(ifile):
+			spath, sname, stype = filename(sfile)
+			setf=open(sfile,'r')
+			settmp=setf.read()
+			setf.close()
 
 
-	#ilist=[ifile]
+		#ilist=[ifile]
 
-	ilist=genlist(ifile)
-	print "Input: {}\n".format(', '.join(ilist))
-	if rfile!='' and rfile!='all':
-		rlist=genlist(rfile)
-		print 'Reference:{}\n'.format(rfile)
-		if rfile not in ilist:
-			ilist.extend(rlist)
-	else:
-		rlist=[]	
+		ilist=genlist(ifile)
+		print "Input: {}\n".format(', '.join(ilist))
+		if rfile!='' and rfile!='all':
+			rlist=genlist(rfile)
+			print 'Reference:{}\n'.format(rfile)
+			if rfile not in ilist:
+				ilist.extend(rlist)
+		else:
+			rlist=[]	
 	
 	
 	
@@ -304,23 +305,27 @@ def main(argv=None):
 		f.close()
 
 		print 'It works'
-		sys.exit(1)
+		#sys.exit(1)
 		#odata=finddiff(odata,rname)
 
-		#tables=tabularize(odata,pdbdata,rname)
+		#tables=summarize(odata,pdbdata)
 		#writesheets(tables)
 	if load:
-		f = open('Odata_center.pckl', 'rb')
-		odata=pickle.load(f)
-		f.close()
-		results=align_M(odata,rname)
-
-		f = open('Odata_results.pckl', 'w')
-		pickle.dump([odata,results], f)
-		f.close()
-		print 'It works'
-		sys.exit(1)
-
+		if os.path.isfile('Odata_center.pckl'):
+			f = open('Odata_center.pckl', 'rb')
+			odata=pickle.load(f)
+			f.close()
+			tables=summarize(odata,pdbdata)
+		#results=align_M(odata,rname)
+			if os.path.isfile('Odata_results.pckl'):			
+				f = open('Odata_results.pckl', 'rb')
+				odata,results=pickle.load(f)
+				f.close()
+				restab=summalign(odata,results)
+				tables['Alignment']=restab
+		
+		
+			writesheets(tables)
 		
 	
 	
@@ -354,29 +359,22 @@ def genlist(ifile):
 			print "Bad file type %(inp)s!" % vars()	
 	return ilist
 
-def tabularize(odata,pdbdata,rname):
+def summarize(odata,pdbdata):
 	#Makes tables out of the map data structure
 	tables=NestedDict()
 	summary=[]
-	summary.append(['File','Fragment', 'Protein segment','Ligand segment','Ligand name','Total surface, A^2','Protein volume, A^3','Solvent accessible volume, A^3', 'VdW volume, A^3','Cavity volume, A^3','Cleft volume, A^3','Waters placed'])
-	rheader=['File','Fragment','Cavity number','Type','Volume','Waters placed','Center','Link']
+	results=[]
+	
+	sheader=['File','Fragment', 'Protein segment','Ligand segment','Ligand name','Total surface, A^2','Protein volume, A^3','Solvent accessible volume, A^3', 'VdW volume, A^3','Cavity volume, A^3','Cleft volume, A^3','Waters placed']
+	rheader=['File','Fragment','Cavity number','Type','Volume','Waters placed','x','y','z','Link']
 	arkeys=['Number','Type','Volume','Waters','Center','Link']
-	if rname!='':
-		refs=['R','R']
-		tgts=['P','PL']
-		aligname='_aligned_'+rname
-		arheader=['File','Type','Alignment','R Number','R Type','R Volume','R Waters placed','R Center','R Link','P Number','P Type','P Volume','P Waters placed','P Center','P Link','PL Number', 'PL Type','PL Volume','PL Waters placed','PL Center','PL Link']
-	else:
-		refs=['P']
-		tgts=['PL']
-		aligname='_aligned'
-		arheader=['File','Type','Alignment','P index','P Type','P Volume','P Waters placed','P Center','P Link','PL index', 'PL Type','PL Volume','PL Waters placed','PL Center','PL Link']
+
+	results.append(rheader)
+	summary.append(sheader)
 	for k in sorted(odata.keys()):
 		frag=odata[k]
-		results=[]
-		aresults=[]
-		results.append(rheader)
-		aresults.append(arheader)
+		#results=[]
+
 		for f in sorted(frag.keys()):
 			general=frag[f]['General']
 			pdb=pdbdata[k]
@@ -397,62 +395,44 @@ def tabularize(odata,pdbdata,rname):
 					cavity=cavities[cav]
 					rline=[k,f]
 					rline=getcavdat(cavity,f,rline,arkeys)
-					results.append(rline)
-		tables[k]=results
-
-
-		for ref, tgt in IT.izip(refs,tgts):
-			rfrag=frag[ref]
-			tfrag=frag[tgt]
-			rdir=ref+'_'+tgt
-			tdir=tgt+'_'+ref
-			rsec=[ref,tgt]
-			dsec=[rdir,tdir]
-			if ref=='R' and tgt=='P' and 'PL' in frag.keys():
-				pdat=frag['P']['P_PL']
-				pldat=frag['PL']['PL_P']
-				plmiss=sorted([it for it in pldat.keys() if it not in pdat.keys()])
-			if rdir in rfrag.keys() and tdir in tfrag.keys():
-				rcavs=frag[ref][rdir]
-				tcavs=frag[tgt][tdir]				
-				for num in range(1,max(rcavs.keys()+tcavs.keys())+1):
-					arline=[k,rdir,num]
-					for fr, dire in IT.izip(rsec, dsec):
-						ddat=frag[fr][dire]
-						if num in ddat.keys():
-							dset=ddat[num]
-							cavnum=dset['Number']
-							if fr=='PL' and dire=='PL_R':
-								arline.extend(['']*len(arkeys))
-							arline=getcavdat(dset,fr,arline,arkeys)
-						else:
-							arline.extend(['']*len(arkeys))
-							cavnum=0
-					if ref=='R' and tgt=='P' and 'PL' in frag.keys():
-						pdat=frag['P']['P_PL']
-						plset=frag['PL']['PL_P']
-						for ppln, ppld in pdat.iteritems():
-							if ppld['Number']==cavnum:
-								plset=frag['PL']['PL_P'][ppln]
-								arline=getcavdat(plset,'PL',arline,arkeys)
-					aresults.append(arline)
-				if ref=='R' and tgt=='P' and 'PL' in frag.keys():
-					for plnum, plk in IT.izip(range(num+1,len(plmiss)),plmiss):
-						plset=frag['PL']['PL_P'][plk]
-						arline=[k,rdir,plnum]
-						arline.extend(['']*2*len(arkeys))
-						arline=getcavdat(plset,'PL',arline,arkeys)
-						aresults.append(arline)	
-					#print arline
-					
-		tables[k+aligname]=aresults	
-
-
-			
+					results.append(rline)		
 		
-			
+	tables['Volumes']=results		
 	tables['Summary']=summary
 	return tables
+
+
+def summalign(odata,results):
+	aligntable=[]
+	header=['Reference','R Frag','Target','T Frag','Alignment','R index','R Type','R Volume','R Waters placed','Rx','Ry','Rz','T index', 'T Type','T Volume','T Waters placed','Tx','Ty','Tz']
+	aligntable.append(header)	
+	vkeys=['Type','Volume','Waters','Center']	
+	for k in results.keys():
+		ref,tgt=k.split('_')
+		for f in results[k].keys():
+			ref_f,tgt_f=f.split('_')
+			rdat=odata[ref][ref_f]['Volumes']
+			tdat=odata[tgt][tgt_f]['Volumes']
+			for al in results[k][f]:
+				#print k,f,al,al[0],al[1],al[2]
+				alin=al[0]
+				rin=al[1]
+				tin=al[2]
+				rline=[ref,ref_f,tgt,tgt_f,alin]
+				if rin!='':
+					rline.append(rin)
+					rline=getcavdat2(rdat,rin,rline,vkeys)
+				else:
+					rline.extend(['','','','','','',''])
+				if tin!='':
+					rline.append(tin)
+					rline=getcavdat2(tdat,tin,rline,vkeys)
+				else:
+					rline.extend(['','','','','','',''])
+				
+				aligntable.append(rline)
+				
+	return aligntable
 
 
 def getcavdat(dataset, fragment, line, dkeys):
@@ -463,10 +443,28 @@ def getcavdat(dataset, fragment, line, dkeys):
 				link=dataset[c]
 				link="{}/{}".format(fragment,link)
 				line.append(link)
+			elif c=='Center':
+				cnt=dataset[c]
+				line.extend([dataset[c][0],dataset[c][1],dataset[c][2]])
 			else: 
 				line.append(dataset[c])
 		else:
 			line.append('')
+	return line
+
+def getcavdat2(dataset,c,line, dkeys):
+	#Generates links to McVol results					
+	if c in dataset.keys():
+		vol=dataset[c]
+		for d in dkeys:
+			if d=='Center':
+				cnt=vol[d]
+				line.extend([cnt[0],cnt[1],cnt[2]])
+			else: 
+				line.append(vol[d])
+	else:
+		line.extend(['','','','','',''])
+
 	return line
 
 
@@ -829,9 +827,9 @@ def centerpqr(pqrfile):
 	#print 'Min x:', min(xc)
 	#print 'Min y:', min(yc)
 	#print 'Min z:', min(zc)	
-	xcent=round_to(sum(xc)/float(len(xc)),0.5)
-	ycent=round_to(sum(yc)/float(len(yc)),0.5)
-	zcent=round_to(sum(zc)/float(len(zc)),0.5)
+	xcent=sum(xc)/float(len(xc))
+	ycent=sum(yc)/float(len(yc))
+	zcent=sum(zc)/float(len(zc))
 	#xdif=[abs(x-xcent) for x in xc]
 	#ydif=[abs(y-ycent) for y in yc]
 	#zdif=[abs(z-zcent) for z in zc]
@@ -1142,16 +1140,20 @@ def writesheets(sheets):
 	#Writes organized data to file.
 	#odir=dircheck('Split')
 	for i in sheets.keys():
-		if i=='Summary':
+		if i in ['Summary','Volumes','Alignment']:
 			oname=i+".csv"
 		else:
-			if '_' in i:
-				tp=i.split('_')[1]
-				nm=i.split('_')[0]
-			else:
-				nm=i
-				tp='results'	
-			oname="{}/{}_{}.csv".format(nm,nm,tp)
+			print 'Unknown key for table: {}'.format(i)
+			
+
+		#else:
+		#	if '_' in i:
+		#		tp=i.split('_')[1]
+		#		nm=i.split('_')[0]
+		#	else:
+		#		nm=i
+		#		tp='results'	
+		#	oname="{}/{}_{}.csv".format(nm,nm,tp)
 		ofile=csv.writer(open(oname,"wb"), dialect='excel') #,delimiter=';', quotechar='"', quoting=csv.QUOTE_ALL
 		for row in sheets[i]:
 			row = [item.encode("utf-8") if isinstance(item, unicode) else str(item) for item in row]
