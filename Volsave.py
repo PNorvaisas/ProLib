@@ -42,6 +42,8 @@ except ImportError, e:
 ifile=sys.argv[1]
 tmp=sys.argv[2]
 
+colors={1:'Co',2:'Se',3:'Ne',4:'Hf',5:'Cf',6:'Ho'}
+
 
 def csvreader(ifile):
 	ifl=open(ifile,'r')
@@ -52,7 +54,7 @@ def csvreader(ifile):
 
 
 
-def volsave(table,rad,mode):
+def volsave(table,rad,mode,colors):
 	
 	countca=0
 	countcl=0
@@ -74,30 +76,30 @@ def volsave(table,rad,mode):
 		y=float(r[yi])
 		z=float(r[zi])
 		ind=int(r[indi])
-
+		cl=colors[ind]
 
 		if mode=='Cavities':
 			tp=r[tpi]
 			if tp=='cavity':
 				countca=countca+1
-				data=['ATOM',countca,'DUM','DUM',ind,x,y,z,ind,rad]
+				data=['ATOM',countca,str(ind),str(ind),ind,x,y,z,0,rad]
 				print data
-				datastr='{0: <5} {1:5d}  {2: <3} {3: <4} {4: 4d} {5: 11.3f} {6: 7.3f} {7: 7.3f} {8:5.2f} {9:5.2f}\n'.format(*data)
+				datastr='{0: <5} {1:5d}  {2: <3} {3: >3} {4: 5d} {5: 11.3f} {6: 7.3f} {7: 7.3f} {8:5.2f} {9:5.2f}\n'.format(*data)
 				print datastr
 				cav.write(datastr)
 			if tp=='cleft':
 				countcl=countcl+1
-				data=['ATOM',countcl,'DUM','DUM',ind,x,y,z,ind,rad]
+				data=['ATOM',countcl,str(ind),str(ind),ind,x,y,z,0,rad]
 				
-				datastr='{0: <5} {1:5d}  {2: <3} {3: <4} {4: 4d} {5: 11.3f} {6: 7.3f} {7: 7.3f} {8:5.2f} {9:5.2f}\n'.format(*data)
+				datastr='{0: <5} {1:5d}  {2: <3} {3: >3} {4: 5d} {5: 11.3f} {6: 7.3f} {7: 7.3f} {8:5.2f} {9:5.2f}\n'.format(*data)
 				print datastr
 				clf.write(datastr)
 
 		elif mode=='Clusters':
 			countcl=countcl+1
-			data=['ATOM',countcl,'DUM','DUM',ind,x,y,z,ind,rad]
+			data=['ATOM',countcl,str(ind),str(ind),ind,x,y,z,0,rad]
 			
-			datastr='{0: <5} {1:5d}  {2: <3} {3: <4} {4: 4d} {5: 11.3f} {6: 7.3f} {7: 7.3f} {8:5.2f} {9:5.2f}\n'.format(*data)
+			datastr='{0: <5} {1:5d}  {2: <3} {3: >3} {4: 5d} {5: 11.3f} {6: 7.3f} {7: 7.3f} {8:5.2f} {9:5.2f}\n'.format(*data)
 			print datastr
 			clus.write(datastr)
 
@@ -111,10 +113,10 @@ def volsave(table,rad,mode):
 
 if '.csv' in tmp:
 	cavs=csvreader(ifile)		
-	volsave(cavs,1.7,'Cavities')
+	volsave(cavs,1.7,'Cavities',colors)
 	clusts=csvreader(tmp)
-	volsave(clusts,1.7,'Clusters')
+	volsave(clusts,1.7,'Clusters',colors)
 elif tmp in ['Cavities','Clusters']:
 	data=csvreader(ifile)
-	volsave(data,1.7,tmp)
+	volsave(data,1.7,tmp,colors)
 

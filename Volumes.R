@@ -9,6 +9,18 @@ library(rgl)
 library(cluster)
 
 vols<-read.table('Volumes.csv',sep=',',quote = '"',header = TRUE)
+vols$File<-toupper(vols$File)
+aff<-read.table('Affinities.csv',sep=',',quote = '"',header = TRUE)
+aff<-rename(aff,c('Ki..nM.'='Ki_nM'))
+aff<-aff[,names(aff) %in% c('PDB.ID','Ki_nM')]
+aff$Ki_M<-aff$Ki_nM*10^(-9)
+aff$Lg_Ki_M<-log10(aff$Ki_M)
+
+crop<-read.table('Summary.csv',sep=',',quote = '"',header = TRUE)
+uncrop<-read.table('Uncropped/Summary.csv',sep=',',quote = '"',header = TRUE)
+crop$File<-toupper(crop$File)
+uncrop$File<-toupper(uncrop$File)
+
 
 #vols$Type<-factor(vols$Type)
 
@@ -21,16 +33,15 @@ volcor<-round(cor(onlyP[,c(5,7:9)]),2)
 pc <- princomp(onlyP[,c(5,7:9)], cor=TRUE, scores=TRUE)
 
 plot(pc,type="lines")
-
 biplot(pc)
 
 
 
 plot3d(onlyP[,c('x','y','z')], col=ifelse(onlyP$Type=='cavity','red','blue'),xlab='X',ylab='Y',zlab='Z')
-rgl.postscript( '3D_cav_clef', fmt = "pdf", drawText = TRUE )
+#rgl.postscript( '3D_cav_clef', fmt = "pdf", drawText = TRUE )
 
 set.seed(42)
-cl <- kmeans(onlyP[,c(7:9)],40)
+cl <- kmeans(onlyP[,c(7:9)],6)
 dst<-dist(onlyP[,c(7:9)])
 onlyP$cluster <- as.factor(cl$cluster)
 
@@ -65,38 +76,59 @@ ggplot() +
   guides(colour = guide_legend(override.aes = list(size=5))) +
   coord_flip() + scale_y_reverse(expand=c(0.2, 0)) + 
   theme_dendro()
-
+#dev.copy2pdf(device=cairo_pdf,file="Cluster_dendro.pdf",width=8,height=8)
 
 
 
 plot3d(pc$scores[,1:4], col=onlyP$hcluster)
 
 plot3d(onlyP[,c('x','y','z')], col=onlyP$hcluster,xlab='X',ylab='Y',zlab='Z')
-rgl.postscript( '3D_clust', fmt = "pdf", drawText = TRUE )
+#rgl.postscript( '3D_clust', fmt = "pdf", drawText = TRUE )
 
 
-voldist<-ggplot(onlyP,aes(x=hcluster,y=Volume,fill=Type))+geom_boxplot()+geom_point(data=subset(onlyP,File %in% c('1uyl','2yeg','3t0h')),aes(color=Type,shape=File),size=6)   #geom_point(aes(x=subset(onlyP,File=='1uyl')$hcluster,y=subset(onlyP,File=='1uyl')$Volume,shape="1UYL"),color="red")
+voldist<-ggplot(onlyP,aes(x=hcluster,y=Volume,fill=Type))+geom_boxplot()+geom_point(data=subset(onlyP,File %in% c('1UYL','2YEG','3T0H')),aes(color=Type,shape=File),size=6)   #geom_point(aes(x=subset(onlyP,File=='1uyl')$hcluster,y=subset(onlyP,File=='1uyl')$Volume,shape="1UYL"),color="red")
 voldist
-dev.copy2pdf(device=cairo_pdf,file="Cluster_vol_dist.pdf",width=8,height=6)
-
-
-
+#dev.copy2pdf(device=cairo_pdf,file="Cluster_vol_dist.pdf",width=8,height=6)
 
 
 
 write.csv(onlyP,file='Centers/CavCl_centers.csv')
 
 file_clusters<-ddply(onlyP, .(File,hcluster), summarise, x=mean(x), y=mean(y), z=mean(z), Volume=sum(Volume))
+affinities<-merge(file_clusters,aff,by.x = 'File',by.y = 'PDB.ID',all.x = TRUE)
+affinities<-subset(affinities,!is.na(Ki_M))
+
+affcor<-ggplot(affinities,aes(x=Lg_Ki_M,y=Volume,color=File))+geom_point()+stat_smooth(aes(group = 1),method = "lm")+ylab(expression(paste("Tūris, ",ring(A)^3)))+xlab('Log(Ki)')+labs(color='PDB')
+affcor+facet_grid(.~hcluster)
+#dev.copy2pdf(device=cairo_pdf,file="Ki-Vol_corr.pdf",width=8,height=6)
+
+volaff<-dcast(affinities,File +Ki_nM+Ki_M+Lg_Ki_M ~ hcluster,sum,value.var = 'Volume')
+rownames(volaff)<-volaff$File
+
+ligpc <- princomp(volaff[,c(4:10)], cor=TRUE, scores=TRUE)
+
+plot(ligpc,type="lines")
+biplot(ligpc)
+
+
+ligaff<-summary(lm(volaff$'Lg_Ki_M'~volaff$'5'))
+
+
 clusters_C<-ddply(onlyP, .(hcluster), summarise, x=mean(x), y=mean(y), z=mean(z), Volume=mean(Volume))
 write.csv(clusters_C,file='Centers/Cluster_centers.csv')
 
 aligned<-merge(file_clusters[,!names(file_clusters) %in% c('x','y','z')],file_clusters[,!names(file_clusters) %in% c('x','y','z')],by = 'hcluster')
 aligned<-rename(aligned,c('File.x'='Reference','File.y'='Target','Volume.x'='Volume_R','Volume.y'='Volume_T'))
 
-vran<-10:30
+vran<-0:5
 onlycor<-subset(aligned,Reference %in% filenames[vran] & Target %in% filenames[vran])
-volcor<-ggplot(onlycor,aes(x=Volume_R,y=Volume_T))+geom_point()+stat_smooth(aes(group = 1),method = "lm")+xlim(0,100)+ylim(0,100)
-volcor+facet_grid(Reference~Target)+xlab('Struktūra 1')+ylab('Struktūra 2')
+volcor<-ggplot(onlycor,aes(x=Volume_R,y=Volume_T,color=hcluster))+geom_point()+stat_smooth(aes(group = 1),method = "lm")+xlim(0,100)+ylim(0,100)
+volcor+facet_grid(Reference~Target)+xlab(expression(paste("Tūris, ",ring(A)^3)))+ylab(expression(paste("Tūris, ",ring(A)^3)))+labs(color='Grupė')
+#dev.copy2pdf(device=cairo_pdf,file="Cluster_sidebyside.pdf",width=8,height=7)
+
+voldist2<-ggplot(file_clusters,aes(x=hcluster,y=Volume))+geom_boxplot()+geom_point(data=subset(file_clusters,File %in% c('1UYL','2YEG','3T0H')),aes(color=File),size=6)
+voldist2+labs(color='Struktūros\nbe ligando')+xlab('Grupė')+ylab(expression(paste("Tūris, ",ring(A)^3)))
+#dev.copy2pdf(device=cairo_pdf,file="Cluster_variation.pdf",width=8,height=6)
 
 
 
@@ -128,14 +160,14 @@ clvols<-t(getclusts(onlyP,'Volume',TRUE))
 heatmap.2(as.matrix(clvols),Rowv=TRUE,Colv=TRUE,trace='none',col=heat.colors(256),
           xlab='Structure',ylab='Cluster',key=TRUE,scale='none',
           dendrogram='both',na.color="grey",cexRow=1.5,cexCol=0.5,main='Ertmiu klasteriu turiai')
-dev.copy2pdf(device=cairo_pdf,file="Cavity-cluster_volume.pdf",width=16,height=9)
+#dev.copy2pdf(device=cairo_pdf,file="Cavity-cluster_volume.pdf",width=16,height=9)
 
 heatmap.2(as.matrix(presence),Rowv=TRUE,Colv=TRUE,trace='none',col=c('white','red'),
           xlab='Structure',ylab='Cluster',key=FALSE,scale='none',
           dendrogram='both',na.color="grey",cexRow=1.5,cexCol=0.5,
           colsep=1:ncol(presence),rowsep=1:nrow(presence),sepcolor="black",sepwidth=c(0.01,0.01),
           main='Ertmiu klusteriu reprezentacija strukturose')
-dev.copy2pdf(device=cairo_pdf,file="Cavity-cluster_presence.pdf",width=16,height=9)
+#dev.copy2pdf(device=cairo_pdf,file="Cavity-cluster_presence.pdf",width=16,height=9)
 
 
 filler <- function(frame,names){
@@ -176,9 +208,9 @@ a<-res$a
 
 
 
-heatmap.2(as.matrix(R),Colv=TRUE,Rowv=TRUE,trace='none',col=heat.colors(256),
-          xlab='Reference',ylab='Target',key=TRUE,scale='none',
-          dendrogram=,na.color="grey",symm = TRUE)
+heatmap.2(as.matrix(R),Colv=TRUE,Rowv=TRUE,trace='none',col=heat.colors(64),
+          xlab="Struktūra 1",ylab='Struktūra 2',key=TRUE,scale='none',
+          dendrogram=,na.color="grey",symm = TRUE,cexRow=0.5,cexCol=0.5)
 
 
 
@@ -187,11 +219,7 @@ heatmap.2(as.matrix(R),Colv=TRUE,Rowv=TRUE,trace='none',col=heat.colors(256),
 
 
 
-aff<-read.table('Affinities.csv',sep=',',quote = '"',header = TRUE)
 
-
-crop<-read.table('Summary.csv',sep=',',quote = '"',header = TRUE)
-uncrop<-read.table('Uncropped/Summary.csv',sep=',',quote = '"',header = TRUE)
 
 crop$Crop<-TRUE
 uncrop$Crop<-FALSE
@@ -222,17 +250,17 @@ allvols<-subset(allvols,Fragment!='L' )
 
 crop_p<-ggplot(subset(allvols,Volume_type %in% c("Protein.volume..A.3")),aes(x=Volume, fill=Crop))+geom_histogram(binwidth=100,position='identity',alpha=0.5)
 crop_p+facet_grid(.~Fragment)+xlab('Baltymo turis, A^3')
-dev.copy2pdf(device=cairo_pdf,file="Protein_volume_bef-af_cut.pdf",width=8,height=6)
+#dev.copy2pdf(device=cairo_pdf,file="Protein_volume_bef-af_cut.pdf",width=8,height=6)
 
 
-Pvols<-ggplot(subset(allvols,Volume_type %in% c("Protein.volume..A.3")),aes(x=Fragment, y=Volume, fill=Crop))+geom_boxplot()+geom_point(data=subset(allvols,File %in% c('1uyl','2yeg','3t0h') & Volume_type %in% c("Protein.volume..A.3")),aes(color=Crop),size=6)   #geom_point(aes(x=subset(onlyP,File=='1uyl')$hcluster,y=subset(onlyP,File=='1uyl')$Volume,shape="1UYL"),color="red")
+Pvols<-ggplot(subset(allvols,Volume_type %in% c("Protein.volume..A.3")),aes(x=Fragment, y=Volume, fill=Crop))+geom_boxplot()+geom_point(data=subset(allvols,File %in% c('1UYL','2YEG','3T0H') & Volume_type %in% c("Protein.volume..A.3")),aes(color=Crop),size=6)   #geom_point(aes(x=subset(onlyP,File=='1uyl')$hcluster,y=subset(onlyP,File=='1uyl')$Volume,shape="1UYL"),color="red")
 Pvols+xlab('Baltymo turis, A^3')
 
 
 
 crop_c<-ggplot(subset(allvols,Volume_type %in% c("Cleft.volume..A.3","Cavity.volume..A.3")),aes(x=Volume, fill=Crop))+geom_histogram(binwidth=20,position='identity',alpha=0.5)
 crop_c+facet_grid(Volume_type~Fragment)+xlab('Turis, A^3')
-dev.copy2pdf(device=cairo_pdf,family="DejaVu Sans",file="Cav-Cleft_volume_bef-af_cut.pdf",width=8,height=6)
+#dev.copy2pdf(device=cairo_pdf,family="DejaVu Sans",file="Cav-Cleft_volume_bef-af_cut.pdf",width=8,height=6)
 
 extrm<-subset(allsum,Fragment=='P' & Crop==TRUE)
 head(extrm[with(extrm,order(-Protein.volume..A.3)),])
