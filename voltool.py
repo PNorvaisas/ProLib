@@ -1085,9 +1085,9 @@ def volumeit_M(links,settings,cores):
 	prcprev=0
 	comp=[]
 	while True:
-	    if result.ready():
+		if result.ready():
 		break
-	    else:
+		else:
 		if q.qsize()>0:
 			res=q.get()
 			if isinstance(res,list):
@@ -1103,7 +1103,7 @@ def volumeit_M(links,settings,cores):
 					total=int((timepassed*100/prc))
 					remaining=int((timepassed*100/prc)-timepassed)
 				else:
-					total=int((timepassed*100/prc))
+					total=int('inf')
 					remaining=int('inf')
 				print "Done {0:3d}%, {1:>5}/{2:<5} remaining: {3:<5} total: {4:<5}".format(int(prc),str(len(comp)),str(len(rem)),str(datetime.timedelta(seconds=remaining)),str(datetime.timedelta(seconds=total)))
 				if len(rem)<5:
