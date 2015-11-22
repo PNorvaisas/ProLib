@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #sys.setdefaultencoding('iso-8859-1')
+#PDB to given sequence alignment
 
 from Bio import pairwise2
 from Bio.SubsMat import MatrixInfo as matlist

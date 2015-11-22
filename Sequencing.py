@@ -2,13 +2,15 @@
 # -*- coding: utf-8 -*-
 #sys.setdefaultencoding('iso-8859-1')
 
+#Script to crop PDB structures according to given sequence
+
 
 for mod in ['pip','re','csv','sys','os','commands','datetime','operator','getopt','subprocess','pickle','shutil','glob','types','math','copy','Bio.SeqIO']:
 	try:
 		exec "import %(mod)s" % vars()
 	except ImportError, e:
 		print "Module not found %(mod)s\nTrying to install!" % vars()
-		install(mod)		
+		install(mod)
 		#pass # module doesn't exist, deal with it.
 
 import Bio.SeqIO
@@ -24,13 +26,6 @@ except ImportError, e:
 	print "Module MDAnalysis not found"
 
 
-aas="Ala A, Arg R, Asn N, Asp D, Cys C, Glu E, Gln Q, Gly G, His H, Ile I, Leu L, Lys K, Met M, Phe F, Pro P, Ser S, Thr T, Trp W, Tyr Y, Val V"
-aa_list=aas.split(',')
-aa_list=[aa.split() for aa in aa_list]
-aa={ a.strip().upper() : b.strip() for a,b in aa_list }
-
-
-
 
 def filename(ifile):
 	base=os.path.basename(ifile)
@@ -40,7 +35,7 @@ def filename(ifile):
 	return ipat, iname, itype
 
 def dircheck(somedir):
-	while True:   	
+	while True:
 		if os.path.exists(somedir):
 			qstn = "Directory %(somedir)s already exists! Delete, quit, continue or provide a new name (d/q/c/<type name>): " % vars()
 			answ = raw_input(qstn)
@@ -64,8 +59,8 @@ def align(seq1,seq2):
 	matrix = matlist.blosum62
 	gap_open = -10
 	gap_extend = -0.5
-	#alns = pairwise2.align.localxx(seq1, seq2) 
-	alns = pairwise2.align.globalds(seq1, seq2, matrix, gap_open, gap_extend) 
+	#alns = pairwise2.align.localxx(seq1, seq2)
+	alns = pairwise2.align.globalds(seq1, seq2, matrix, gap_open, gap_extend)
 	top_aln = alns[0]
 	return top_aln
 
@@ -73,8 +68,8 @@ def alignlocal(seq1,seq2):
 	matrix = matlist.blosum62
 	gap_open = -20
 	gap_extend = -20
-	#alns = pairwise2.align.localxx(seq1, seq2) 
-	alns = pairwise2.align.globalds(seq1, seq2, matrix, gap_open, gap_extend) 
+	#alns = pairwise2.align.localxx(seq1, seq2)
+	alns = pairwise2.align.globalds(seq1, seq2, matrix, gap_open, gap_extend)
 	top_aln = alns[0]
 	return top_aln
 
@@ -92,58 +87,110 @@ def longest_substring(s1, s2):
                 t[x][y] = 0
     return s1[xl-l: xl], xl-l, xl
 
+def longmatch(seq,ref):
+    matches={}
+    lseq=[]
+    i=0
+    lstart=0
+    lend=0
+    mlen=0
+    lk=['0:0']
+    for rc in ref:
+        if seq[0]==rc:
+            lseq.append(rc)
+            lend=i
+        else:
+            if len(lseq)>0:
+                key='{}:{}'.format(lstart,lend)
+                matches[key]=''.join(lseq)
+                if len(lseq)>mlen:
+                    lk=[key]
+                    mlen=len(lseq)
+                elif len(lseq)>mlen:
+                    lk.append(key)
+                print '{} - {}'.format(key,len(lseq))
+                lseq=[]
+            lstart=i+1
+        seq=seq[1:]
+        i=i+1
+
+    if len(lseq)>0:
+        key='{}:{}'.format(lstart,lend)
+        matches[key]=''.join(lseq)
+        lk=[key]
+    return matches,lk
+
+
 def chunkstring(string, length):
     return [string[0+i:length+i] for i in range(0, len(string), length)]
 
 def crop(ifile,mstring,aminoacids):
-	ipath, iname, itype=filename(ifile)
-	print iname
-	u=MD.Universe(ifile)
-	chain=u.selectAtoms('segid A')
-	hetatm=u.selectAtoms('not protein')
-	p=chain.selectAtoms('protein')
-	ress=''.join([ aminoacids[res] for res in p.resnames() if res in aminoacids.keys()])
-	print "Length of PDB chain: {}".format(len(ress))
-	results=align(mstring,ress)
-	#record = p.sequence(format='string')
-	longest1=longest_substring(results[1], results[0])
-	res2=alignlocal(ress,longest1[0])
-	longest, start, stop=longest_substring(res2[1], res2[0])
-	print longest, start, stop
-	zerores=chain.residues.resids()[0]
-	start=start+zerores
-	stop=stop+zerores-1
-	
-	segment=chain.selectAtoms("resid {}:{}".format(start,stop))
-	segg=''.join([ aminoacids[res] for res in segment.resnames() if res in aminoacids.keys()])
-	
-	aligned=''
-	#print chunkstring(results[1],50)
-	#print results[1]
-	for a,b in IT.izip(chunkstring(results[1],50),chunkstring(results[0],50)):
-		aligned=aligned+'PDB '+a+'\nRef '+b+'\n\n'
-	print aligned
-	print "Length of longest matching chain: {}\n".format(len(segment.resnames()))
-	print "Longest matching chain:\n{}".format('\n'.join(tw.wrap(segg,50)))
-	if len(hetatm)>0:
-		chop=MD.Merge(segment,hetatm)
-	else:
-		chop=segment
-	chop.atoms.write(iname+'_'+mstring[0:4]+str(len(mstring))+'_cropped.pdb')
-	logf=open(iname+'_'+mstring[0:4]+str(len(mstring))+'_log.txt','w')
-	log="Input PDB: {}\nReference amino acid chain:\n{}\n\nAlignment:\n{}\nLongest match: {}\nLongest matching chain:\n{}\n".format(ifile,'\n'.join(tw.wrap(mstring,50)),aligned,len(segment.resnames()),'\n'.join(tw.wrap(segg,50)))
-	logf.write(log)
-	logf.close()
-	summary=mstring[0:4]+str(len(mstring))+'_summary.csv'
-	if os.path.exists(summary):
-		sumff=open(summary,"a")
-		sumf=csv.writer(sumff, dialect='excel')
-	else:
-		sumff=open(summary,"a")
-		sumf=csv.writer(sumff, dialect='excel')
-		sumf.writerow(['Ref',len(mstring),mstring,mstring])
-	sumf.writerow([iname,len(segment.resnames()),results[1],segg])
-	sumff.close()
+    outdata=[]
+    ipath, iname, itype=filename(ifile)
+    print iname
+    u=MD.Universe(ifile)
+    for chain in u.segments:
+        sname=chain.name
+        print "Segment: {}".format(sname)
+        hetatm=chain.selectAtoms('not protein')
+        p=chain.selectAtoms('protein')
+        ress=''.join([ aminoacids[res] for res in p.resnames()])
+        if len(ress)>0:
+            # print "Length of PDB chain: {}".format(len(ress))
+            results=align(mstring,ress)
+            #record = p.sequence(format='string')
+            #Longest sequence present in PDB also present in reference
+            #Results[1] - PDB, results[0] reference
+            matches1,lk1=longmatch(results[1], results[0])
+            longest1=matches1[lk1[0]]
+            start1,stop1=(int(nr) for nr in lk1[0].split(':'))
+            print 'Unadjusted: {}...{}'.format(longest1[:10],longest1[-10:])
+            print 'Unadjusted start: {} stop: {} length: {}'.format(start1,stop1,stop1-start1+1)
+            res2=alignlocal(longest1,ress)
+            matches,lk=longmatch(res2[1], res2[0])
+            longest=matches[lk[0]]
+
+            start,stop=(int(nr) for nr in lk[0].split(':'))
+            print 'Adjusted: {}...{}'.format(longest[:10],longest[-10:])
+            print 'Adjusted start: {} stop: {} length: {}'.format(start,stop,stop-start+1)
+            #Adjust position of residues
+            zerores=p.residues.resids()[0]
+            print 'Start in PDB: {}'.format(zerores)
+            print p.residues.resids()
+            resseq=p.residues.resids()[start:stop+1]
+            #start=start+zerores
+            #stop=stop+zerores+1
+
+
+            segment=p.selectAtoms("resid {}:{}".format(resseq[0],resseq[-1]))
+            #Test
+            segg=''.join([ aminoacids[res] for res in segment.resnames() ])#if res in aminoacids.keys()
+            print 'Final: {}...{}'.format(segg[:10],segg[-10:])
+            print 'Final start: {} stop: {} length: {}'.format(start,stop,stop-start)
+
+            aligned=''
+            #print chunkstring(results[1],50)
+            #print results[1]
+            for a,b in IT.izip(chunkstring(results[1],50),chunkstring(results[0],50)):
+                aligned=aligned+'PDB '+a+'\nRef '+b+'\n\n'
+            # print aligned
+            print "Length of longest matching chain: {}\n".format(len(segment.resnames()))
+            print "Longest matching chain:\n{}".format('\n'.join(tw.wrap(segg,50)))
+            print "Match length: {}".format(len(segg))
+            if len(hetatm)>0:
+                chop=MD.Merge(segment,hetatm)
+            else:
+                chop=segment
+            chop.atoms.write(iname+'_'+mstring[0:4]+str(len(mstring))+'_cropped.pdb')
+            logf=open(iname+'_'+mstring[0:4]+str(len(mstring))+'_log.txt','w')
+            log="Input PDB: {}\nReference amino acid chain:\n{}\n\nAlignment:\n{}\nLongest match: {}\nLongest matching chain:\n{}\nPDB:\n{}\nReference:\n{}".format(ifile,'\n'.join(tw.wrap(mstring,50)),aligned,len(segment.resnames()),'\n'.join(tw.wrap(segg,50)),results[1],results[0])
+            logf.write(log)
+            logf.close()
+            outdata.append([iname,'Ref',len(segment.resnames()),results[0],segg])
+            outdata.append([iname,sname,len(segment.resnames()),results[1],segg])
+
+    return outdata
+
 
 
 def readseq(ifile):
@@ -153,12 +200,6 @@ def readseq(ifile):
 	datastring=''.join(idata)
 	data.close()
 	return datastring
-
-
-ifile=sys.argv[1]
-
-matchingstr=readseq(sys.argv[2])
-crop(ifile,matchingstr,aa)
 
 
 
