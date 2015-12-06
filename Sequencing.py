@@ -181,8 +181,8 @@ def crop(ifile,mstring,aminoacids):
                 chop=MD.Merge(segment,hetatm)
             else:
                 chop=segment
-            chop.atoms.write(iname+'_'+mstring[0:4]+str(len(mstring))+'_cropped.pdb')
-            logf=open(iname+'_'+mstring[0:4]+str(len(mstring))+'_log.txt','w')
+            chop.atoms.write('{}_{}_{}{}_cropped.pdb'.format(iname,sname,mstring[0:4],str(len(mstring))))
+            logf=open('{}_{}_{}{}_log.txt'.format(iname,sname,mstring[0:4],str(len(mstring))),'w')
             log="Input PDB: {}\nReference amino acid chain:\n{}\n\nAlignment:\n{}\nLongest match: {}\nLongest matching chain:\n{}\nPDB:\n{}\nReference:\n{}".format(ifile,'\n'.join(tw.wrap(mstring,50)),aligned,len(segment.resnames()),'\n'.join(tw.wrap(segg,50)),results[1],results[0])
             logf.write(log)
             logf.close()

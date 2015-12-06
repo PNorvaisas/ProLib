@@ -181,6 +181,7 @@ def main(argv=None):
 			elif iname=='' and itype!='':
 				print "Working directory is expected to contain files of %(itype)s!" % vars()
 				pqrfl=glob.glob("./*.%(itype)s" % vars())
+				pqrfl=sorted(pqrfl)
 				if len(pqrfl)==0:
 					raise Exception("No *.%(itype)s files found in working directory!" % vars())
 				else:
@@ -275,7 +276,7 @@ def main(argv=None):
 	if mcvol:
 		if not pqr:
 			links, pdbdata=prepare(ilist,pdbdata,pqr)
-		outputs=volumeit_M(links,settmp,20)
+		outputs=volumeit_M(links,settmp,7)
 		#sys.exit(1)
 		saveout(outputs)
 
@@ -298,11 +299,11 @@ def main(argv=None):
 		pickle.dump(odata, f)
 		f.close()
 		
-		results=align_M(odata,rname,20)
+		#results=align_M(odata,rname,20)
 
-		f = open('Odata_results.pckl', 'w')
-		pickle.dump([odata,results], f)
-		f.close()
+		#f = open('Odata_results.pckl', 'w')
+		#pickle.dump([odata,results], f)
+		#f.close()
 
 		print 'It works'
 		#sys.exit(1)
@@ -357,7 +358,7 @@ def genlist(ifile):
 				ilist.extend(genlist(tfile))
 		else:
 			print "Bad file type %(inp)s!" % vars()	
-	return ilist
+	return sorted(ilist)
 
 def summarize(odata,pdbdata):
 	#Makes tables out of the map data structure
@@ -1086,29 +1087,29 @@ def volumeit_M(links,settings,cores):
 	comp=[]
 	while True:
 		if result.ready():
-		break
+			break
 		else:
-		if q.qsize()>0:
-			res=q.get()
-			if isinstance(res,list):
-				comp.extend(res)
-			else:
-				comp.append(res)
-			prc = float(len(comp)+1)*100/float(len(args))
-			timepassed=float(time.time()-start)
-			if prc>prcprev:
-				#print completed
-				rem=[j for j in inps if j not in comp ]
-				if prc!=0:
-					total=int((timepassed*100/prc))
-					remaining=int((timepassed*100/prc)-timepassed)
+			if q.qsize()>0:
+				res=q.get()
+				if isinstance(res,list):
+					comp.extend(res)
 				else:
-					total=int('inf')
-					remaining=int('inf')
-				print "Done {0:3d}%, {1:>5}/{2:<5} remaining: {3:<5} total: {4:<5}".format(int(prc),str(len(comp)),str(len(rem)),str(datetime.timedelta(seconds=remaining)),str(datetime.timedelta(seconds=total)))
-				if len(rem)<5:
-					print 'Working on: {}'.format(rem)
-				prcprev=prc
+					comp.append(res)
+				prc = float(len(comp)+1)*100/float(len(args))
+				timepassed=float(time.time()-start)
+				if prc>prcprev:
+					#print completed
+					rem=[j for j in inps if j not in comp ]
+					if prc!=0:
+						total=int((timepassed*100/prc))
+						remaining=int((timepassed*100/prc)-timepassed)
+					else:
+						total=int('inf')
+						remaining=int('inf')
+					print "Done {0:3d}%, {1:>5}/{2:<5} remaining: {3:<5} total: {4:<5}".format(int(prc),str(len(comp)),str(len(rem)),str(datetime.timedelta(seconds=remaining)),str(datetime.timedelta(seconds=total)))
+					if len(rem)<5:
+						print 'Working on: {}'.format(rem)
+					prcprev=prc
 		time.sleep(2)
 	print 'Collecting results....'
 	results=result.get()
@@ -1221,16 +1222,20 @@ def readpdbdata(pdbfile):
 	#Reads saved user choices for ligands in analyzed PDB files
 	pdbdata=NestedDict()	
 	pdbf=open(pdbfile,'r')
-	pdbd=pdbf.read()
+	rdr=csv.reader(pdbf, delimiter=',')
+	data=[row for row in rdr]
 	pdbf.close()
-	print " PDBid  Protseg Ligseg Lig"
-	for row in pdbd.split("\n"):
-		d=row.split(",")
-		if len(d)!=1:
-			print d
-			pdbdata[d[0]]['Protein segment']=d[1]
-			pdbdata[d[0]]['Ligand segment']=d[2]
-			pdbdata[d[0]]['Ligand name']=d[3]
+	header=data[0]
+	psin=header.index('Protein segment')
+	lsin=header.index('Ligand segment')
+	lin=header.index('Ligand name')
+	cm=header.index('Complex')
+	for d in data[1:]:
+		print d
+		pdbdata[d[0]]['Protein segment']=d[psin]
+		pdbdata[d[0]]['Ligand segment']=d[lsin]
+		pdbdata[d[0]]['Ligand name']=d[lin]
+		pdbdata[d[0]]['Complex']=d[cm]
 	
 	return pdbdata
 
@@ -1333,7 +1338,7 @@ def splitpdb(ifile, odata, ligname=''):
 	else:
 		pdbi=False
 	
-	
+	#Collect PDB structure information
 	for s in u.segments:
 		print "Segment: {}".format(s.name)
 		p=s.selectAtoms('protein')
@@ -1370,7 +1375,7 @@ def splitpdb(ifile, odata, ligname=''):
 			npsegs[info[k]['Hetero']['Size']].append(k)
 	
 
-	
+	#Get protein segment
 	if pdbi and 'Protein segment' in pdbinfo.keys() and pdbinfo['Protein segment']!='':
 		pseg=pdbinfo['Protein segment']
 		print "\nFound protein segment:", pseg
@@ -1405,15 +1410,16 @@ def splitpdb(ifile, odata, ligname=''):
 
 	prot=info[pseg]['Protein']['Atoms']
 
+
+
 	
 	#Choose ligand segment
 	if pdbi and 'Ligand segment' in pdbinfo.keys():
-		if pdbinfo['Ligand segment']!='':
-			lseg=pdbinfo['Ligand segment']
+		lseg=pdbinfo['Ligand segment']
+		if lseg!='':
 			print "\nFound ligand segment:", lseg
 			l=info[lseg]['Hetero']['Atoms']
 		else:
-			lseg=''
 			print "\nNo ligand segment!"
 			ligname=None
 	else:
@@ -1509,12 +1515,25 @@ def splitpdb(ifile, odata, ligname=''):
 					ligname=None
 					print "No such ligands {} found!".format(ligname)	
 
-		
+	if pdbi and 'Complex' in pdbinfo.keys():
+		ionname=pdbinfo['Complex']
+		ion=l.selectAtoms('resname {}'.format(ionname))
+		prot=prot+ion
+
+
 	lig_o=''
 	plig_o=''
 	prot_o=iname+"/"+iname+"_P.pdb"
+
+
+
+
+
 	if pseg in ['SYSTEM','']:
 		prot.set_segid('P')
+
+
+
 	if ligname!=None:
 		odata[iname]['Ligand segment']=lseg
 		if isinstance(ligname, list):
@@ -1570,6 +1589,9 @@ def fixpqr(ifile):
 				#print 'END'
 				ifl.write(data[0]+'\n')
 			else:
+				#print data
+				#data[1]=int(data[1])
+				#data[4]=int(data[4])
 				#print data			
 				if len(data[2])==4:
 					datastr='{0: <5} {1:5d} {2: <4} {3: <4} {5: 4d} {6: 11.3f} {7: 8.3f} {8: 8.3f} {9:.3f} {10:.3f}'.format(*data)
