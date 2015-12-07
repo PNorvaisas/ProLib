@@ -270,13 +270,13 @@ def main(argv=None):
 
 	if pqr:
 		links, pdbdata=prepare(ilist,pdbdata,pqr)
-		if answ=='N' or not os.path.isfile(pdbinfofile):
+		if answ=='N' and not os.path.isfile(pdbinfofile):
 			writepdbdata(pdbdata)		
 
 	if mcvol:
 		if not pqr:
 			links, pdbdata=prepare(ilist,pdbdata,pqr)
-		outputs=volumeit_M(links,settmp,7)
+		outputs=volumeit_M(links,settmp,16)
 		#sys.exit(1)
 		saveout(outputs)
 
@@ -311,7 +311,7 @@ def main(argv=None):
 
 		#tables=summarize(odata,pdbdata)
 		#writesheets(tables)
-	if load:
+	if load or doanalyze:
 		if os.path.isfile('Odata_center.pckl'):
 			f = open('Odata_center.pckl', 'rb')
 			odata=pickle.load(f)
@@ -327,6 +327,8 @@ def main(argv=None):
 		
 		
 			writesheets(tables)
+
+			print 'Results written!'
 		
 	
 	
@@ -609,151 +611,6 @@ def align_ref(odata,rname):
 	return odata
 
 
-def align_M(odata,rname,cores):
-	print 'Aligning cavities and clefts...'
-
-
-	outputs=NestedDict()
-
-	p=Pool(cores)
-	m = Manager()
-	q = m.Queue()
-	args=[]
-
-	if rname=='all':
-		for ref in odata.keys():
-			for tgt in odata.keys():
-				args.append((odata,ref,tgt,q))
-	elif rname!='' and rname in odata.keys():
-		for tgt in odata.keys():
-			args.append((odata,rname,tgt,q))
-
-	result = p.map_async(align, args)
-	start=time.time()
-	prcprev=0
-
-	while True:
-	    if result.ready():
-		break
-	    else:
-		prc = float(q.qsize()+1)*100/float(len(args))
-		timepassed=float(time.time()-start)
-		if prc>prcprev:
-			if prc!=0:
-				total=int((timepassed*100/prc))
-				remaining=int((timepassed*100/prc)-timepassed)
-			else:
-				total=int((timepassed*100/prc))
-				remaining=int('inf')
-			print "Done {0:3d}%, remaining: {1:<5} total: {2:<5}".format(int(prc),str(datetime.timedelta(seconds=remaining)),str(datetime.timedelta(seconds=total)))
-			prcprev=prc
-		time.sleep(2)
-
-	print result	
-	results=result.get()
-	
-	for res in results:
-		rn=res[0]
-		tn=res[1]
-		#print rn,tn,res[2]
-		outputs.update(res[2])
-
-	return outputs
-
-	
-
-def align((odata,rname,k,q)):
-	#Finds whether cavities or clefts found with McVol are overlapping. Checks whther the center point of one is within a determined distance of the points of the other.
-	
-	#refs=['P']
-	#tgts=['PL']	
-
-	results=NestedDict()		
-
-	if rname!='' and rname in odata.keys():
-		reference=True
-		#print "Setting up reference {}.\n".format(rname)
-		rfrag=odata[rname]
-		#refvols=rfrag['P']['Volumes']
-		refs=['P','P','PL','PL']
-
-	else:
-		print "No reference used!"
-	if k!='' and k in odata.keys():
-		tgts=['P','PL','P','PL']
-		frag=odata[k]
-		
-
-		
-
-	#if k==rname:
-		#continue
-	#print '<<<Aligning {} to {}>>>'.format(k,rname)
-	
-	
-	num=1
-	for ref,tgt in IT.izip(refs,tgts):
-		if (tgt in frag.keys()) and (ref in rfrag.keys()):
-			#print "{}-{} to {}-{}".format(rname,ref,k,tgt)
-			rt={}
-			rvalues=[]
-			rvols=rfrag[ref]['Volumes']
-			
-			tvols=frag[tgt]['Volumes']
-			
-		
-			for rvol in sorted(rvols.keys()):				
-				coords=rvols[rvol]['Center']				
-				for tvol in sorted(tvols.keys()):
-					tlinkt=tvols[tvol]['Link']
-					tlink='{}/{}/'.format(k,tgt)+tlinkt					
-					if inpqr(tlink,coords):
-						#print '\t{}{}={}{}'.format(ref,rvol,tgt,tvol)
-						if rvol in rt.keys():
-							rt[rvol]=rt[rvol]+[tvol]
-						else:
-							rt[rvol]=[tvol]
-
-						#What if couple target volumes?			
-			
-			for rv in rt.values():
-				if isinstance(rv,list):
-					rvalues.extend(rv)
-				else:
-					rvalues.append(rv)
-
-			
-			
-			rmiss=[c for c in rvols.keys() if not c in rt.keys()]
-			rin=[c for c in rvols.keys() if c in rt.keys()]
-			#Problems here
-			tmiss=[c for c in tvols.keys() if not c in rvalues]
-			tin=[c for c in tvols.keys() if c in rvalues]
-			#print 'Overlap: {}:{}/{}:{}, {}diff: {}, {}diff: {}\n------------------------------------------\n'.format(ref,len(rin),tgt,len(tin),ref,len(rmiss),tgt,len(tmiss))	
-			#if not reference:
-			num=1
-			rtres=[]
-			for ri in sorted(rin): # His
-				if isinstance(rt[ri],list):
-					for tgv in rt[ri]:
-						rtres.append([num,ri,tgv])
-						num=num+1
-				else:
-					rtres.append([num,ri,rt[ri]])
-					num=num+1
-			for rm in sorted(rmiss): #Reference missing 
-				rtres.append([num,rm,''])
-				num=num+1
-			for tm in sorted(tmiss): #Target missing
-				rtres.append([num,'',tm])
-				num=num+1
-
-			results[rname+'_'+k][ref+'_'+tgt]=rtres
-	
-
-	q.put('i')									
-
-	return rname, k, results
 
 def finddiff(odata,rname):
 	refs=['P']
@@ -1041,7 +898,7 @@ def mcvolhandler((k,f,settings,q)):
 	if f!='' and os.path.isfile(f):
 		fpath, fname, ftype=filename(f)
 		if '_' in fname:
-			part=fname.split('_')[1]
+			part=fname.split('_')[-1]
 		else:
 			part='vol'
 		wdir=os.path.join(k,part)
@@ -1183,9 +1040,9 @@ def prepare(ilist, pdbdata,pqr):
 					links[fname]=pqrfiles
 			elif ftype=='pqr':
 				#if "_" in fname:
-				#	fname=fname.split('_')[0]
-				if '_' in fname:
-					fname=fname.split('_')[0]
+				#part not finished!!!
+				if fname.count('_')>0:
+					fname='_'.join(fname.split('_')[:-1])
 				if fname in links.keys():
 					#print 'Filename', fname
 					#print links
@@ -1247,7 +1104,7 @@ def collect(links):
 			if f!='' and os.path.isfile(f):
 				fpath, fname, ftype=filename(f)
 				if '_' in fname:
-					part=fname.split('_')[1]
+					part=fname.split('_')[-1]
 				else:
 					part='vol'
 			if os.path.exists('%(k)s/%(k)s_%(part)s.txt' % vars()):			
@@ -1675,6 +1532,155 @@ def dircheck(somedir):
 
 def install(package):
 	pip.main(['install', package])
+
+
+
+
+def align_M(odata,rname,cores):
+	print 'Aligning cavities and clefts...'
+
+
+	outputs=NestedDict()
+
+	p=Pool(cores)
+	m = Manager()
+	q = m.Queue()
+	args=[]
+
+	if rname=='all':
+		for ref in odata.keys():
+			for tgt in odata.keys():
+				args.append((odata,ref,tgt,q))
+	elif rname!='' and rname in odata.keys():
+		for tgt in odata.keys():
+			args.append((odata,rname,tgt,q))
+
+	result = p.map_async(align, args)
+	start=time.time()
+	prcprev=0
+
+	while True:
+		if result.ready():
+			break
+		else:
+			prc = float(q.qsize()+1)*100/float(len(args))
+			timepassed=float(time.time()-start)
+			if prc>prcprev:
+				if prc!=0:
+					total=int((timepassed*100/prc))
+					remaining=int((timepassed*100/prc)-timepassed)
+				else:
+					total=int((timepassed*100/prc))
+					remaining=int('inf')
+				print "Done {0:3d}%, remaining: {1:<5} total: {2:<5}".format(int(prc),str(datetime.timedelta(seconds=remaining)),str(datetime.timedelta(seconds=total)))
+				prcprev=prc
+		time.sleep(2)
+
+	print result
+	results=result.get()
+
+	for res in results:
+		rn=res[0]
+		tn=res[1]
+		#print rn,tn,res[2]
+		outputs.update(res[2])
+
+	return outputs
+
+
+
+def align((odata,rname,k,q)):
+	#Finds whether cavities or clefts found with McVol are overlapping. Checks whther the center point of one is within a determined distance of the points of the other.
+
+	#refs=['P']
+	#tgts=['PL']
+
+	results=NestedDict()
+
+	if rname!='' and rname in odata.keys():
+		reference=True
+		#print "Setting up reference {}.\n".format(rname)
+		rfrag=odata[rname]
+		#refvols=rfrag['P']['Volumes']
+		refs=['P','P','PL','PL']
+
+	else:
+		print "No reference used!"
+	if k!='' and k in odata.keys():
+		tgts=['P','PL','P','PL']
+		frag=odata[k]
+
+
+
+
+	#if k==rname:
+		#continue
+	#print '<<<Aligning {} to {}>>>'.format(k,rname)
+
+
+	num=1
+	for ref,tgt in IT.izip(refs,tgts):
+		if (tgt in frag.keys()) and (ref in rfrag.keys()):
+			#print "{}-{} to {}-{}".format(rname,ref,k,tgt)
+			rt={}
+			rvalues=[]
+			rvols=rfrag[ref]['Volumes']
+
+			tvols=frag[tgt]['Volumes']
+
+
+			for rvol in sorted(rvols.keys()):
+				coords=rvols[rvol]['Center']
+				for tvol in sorted(tvols.keys()):
+					tlinkt=tvols[tvol]['Link']
+					tlink='{}/{}/'.format(k,tgt)+tlinkt
+					if inpqr(tlink,coords):
+						#print '\t{}{}={}{}'.format(ref,rvol,tgt,tvol)
+						if rvol in rt.keys():
+							rt[rvol]=rt[rvol]+[tvol]
+						else:
+							rt[rvol]=[tvol]
+
+						#What if couple target volumes?
+
+			for rv in rt.values():
+				if isinstance(rv,list):
+					rvalues.extend(rv)
+				else:
+					rvalues.append(rv)
+
+
+
+			rmiss=[c for c in rvols.keys() if not c in rt.keys()]
+			rin=[c for c in rvols.keys() if c in rt.keys()]
+			#Problems here
+			tmiss=[c for c in tvols.keys() if not c in rvalues]
+			tin=[c for c in tvols.keys() if c in rvalues]
+			#print 'Overlap: {}:{}/{}:{}, {}diff: {}, {}diff: {}\n------------------------------------------\n'.format(ref,len(rin),tgt,len(tin),ref,len(rmiss),tgt,len(tmiss))
+			#if not reference:
+			num=1
+			rtres=[]
+			for ri in sorted(rin): # His
+				if isinstance(rt[ri],list):
+					for tgv in rt[ri]:
+						rtres.append([num,ri,tgv])
+						num=num+1
+				else:
+					rtres.append([num,ri,rt[ri]])
+					num=num+1
+			for rm in sorted(rmiss): #Reference missing
+				rtres.append([num,rm,''])
+				num=num+1
+			for tm in sorted(tmiss): #Target missing
+				rtres.append([num,'',tm])
+				num=num+1
+
+			results[rname+'_'+k][ref+'_'+tgt]=rtres
+
+
+	q.put('i')
+
+	return rname, k, results
 
 #----------------------------------
 
