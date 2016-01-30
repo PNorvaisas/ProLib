@@ -10,16 +10,31 @@ library(cluster)
 
 vols<-read.table('Volumes.csv',sep=',',quote = '"',header = TRUE)
 vols$File<-toupper(vols$File)
+vols<- transform(vols, File = colsplit(File, "_", names = c('a', 'b')))
+vols$File<-vols$File[[1]]
+
 aff<-read.table('Affinities.csv',sep=',',quote = '"',header = TRUE)
 aff<-rename(aff,c('Ki..nM.'='Ki_nM'))
+
 aff<-aff[,names(aff) %in% c('PDB.ID','Ki_nM')]
 aff$Ki_M<-aff$Ki_nM*10^(-9)
 aff$Lg_Ki_M<-log10(aff$Ki_M)
 
 crop<-read.table('Summary.csv',sep=',',quote = '"',header = TRUE)
-uncrop<-read.table('Uncropped/Summary.csv',sep=',',quote = '"',header = TRUE)
+#uncrop<-read.table('Uncropped/Summary.csv',sep=',',quote = '"',header = TRUE)
 crop$File<-toupper(crop$File)
-uncrop$File<-toupper(uncrop$File)
+crop<- transform(crop, File = colsplit(File, "_", names = c('a', 'b')))
+crop$File<-crop$File[[1]]
+crop<-merge(crop,aff,by.x='File',by.y='PDB.ID',all.x = TRUE)
+#uncrop$File<-toupper(uncrop$File)
+
+#Structures without ligand
+pdbinfo<-read.table('../PDB_info.txt',sep=',',quote = '"',header = TRUE)
+pdbinfo$File<-toupper(pdbinfo$File)
+pdbinfo<- transform(pdbinfo, File = colsplit(File,"_", names = c('a', 'b')))
+pdbinfo$File<-pdbinfo$File[[1]]
+emptyfiles<-subset(pdbinfo,Ligand.name=='')$File
+#emptyfiles<-c('1UYL','2YEG','3T0H')
 
 
 #vols$Type<-factor(vols$Type)
@@ -85,22 +100,27 @@ plot3d(pc$scores[,1:4], col=onlyP$hcluster)
 plot3d(onlyP[,c('x','y','z')], col=onlyP$hcluster,xlab='X',ylab='Y',zlab='Z')
 #rgl.postscript( '3D_clust', fmt = "pdf", drawText = TRUE )
 
-
-voldist<-ggplot(onlyP,aes(x=hcluster,y=Volume,fill=Type))+geom_boxplot()+geom_point(data=subset(onlyP,File %in% c('1UYL','2YEG','3T0H')),aes(color=Type,shape=File),size=6)   #geom_point(aes(x=subset(onlyP,File=='1uyl')$hcluster,y=subset(onlyP,File=='1uyl')$Volume,shape="1UYL"),color="red")
-voldist
+#Volume distribution
+voldist<-ggplot(onlyP,aes(x=hcluster,y=Volume,color=Type))+geom_point(size=3)+geom_boxplot()   #geom_point(aes(x=subset(onlyP,File=='1uyl')$hcluster,y=subset(onlyP,File=='1uyl')$Volume,shape="1UYL"),color="red")
+voldist+labs(color='Struktūros\nbe ligando')+xlab('Grupė')+ylab(expression(paste("Tūris, ",ring(A)^3)))
 #dev.copy2pdf(device=cairo_pdf,file="Cluster_vol_dist.pdf",width=8,height=6)
-
+#+geom_boxplot()data=subset(onlyP,File %in% emptyfiles),
 
 
 write.csv(onlyP,file='Centers/CavCl_centers.csv')
 
+#Data prep
 file_clusters<-ddply(onlyP, .(File,hcluster), summarise, x=mean(x), y=mean(y), z=mean(z), Volume=sum(Volume))
-affinities<-merge(file_clusters,aff,by.x = 'File',by.y = 'PDB.ID',all.x = TRUE)
+
+
+#Ligand affinities
+affinities<-merge(file_clusters,aff,by.x = 'File',by.y = 'PDB.ID')#,all.x = TRUE,all.y=TRUE
 affinities<-subset(affinities,!is.na(Ki_M))
 
 affcor<-ggplot(affinities,aes(x=Lg_Ki_M,y=Volume,color=File))+geom_point()+stat_smooth(aes(group = 1),method = "lm")+ylab(expression(paste("Tūris, ",ring(A)^3)))+xlab('Log(Ki)')+labs(color='PDB')
 affcor+facet_grid(.~hcluster)
 #dev.copy2pdf(device=cairo_pdf,file="Ki-Vol_corr.pdf",width=8,height=6)
+
 
 volaff<-dcast(affinities,File +Ki_nM+Ki_M+Lg_Ki_M ~ hcluster,sum,value.var = 'Volume')
 rownames(volaff)<-volaff$File
@@ -117,16 +137,23 @@ ligaff<-summary(lm(volaff$'Lg_Ki_M'~volaff$'5'))
 clusters_C<-ddply(onlyP, .(hcluster), summarise, x=mean(x), y=mean(y), z=mean(z), Volume=mean(Volume))
 write.csv(clusters_C,file='Centers/Cluster_centers.csv')
 
+
+#For correlation
 aligned<-merge(file_clusters[,!names(file_clusters) %in% c('x','y','z')],file_clusters[,!names(file_clusters) %in% c('x','y','z')],by = 'hcluster')
 aligned<-rename(aligned,c('File.x'='Reference','File.y'='Target','Volume.x'='Volume_R','Volume.y'='Volume_T'))
 
+filesel<-unique(file_clusters$File)
+
 vran<-0:5
-onlycor<-subset(aligned,Reference %in% filenames[vran] & Target %in% filenames[vran])
+onlycor<-subset(aligned,Reference %in% filesel[vran] & Target %in% filesel[vran])
 volcor<-ggplot(onlycor,aes(x=Volume_R,y=Volume_T,color=hcluster))+geom_point()+stat_smooth(aes(group = 1),method = "lm")+xlim(0,100)+ylim(0,100)
 volcor+facet_grid(Reference~Target)+xlab(expression(paste("Tūris, ",ring(A)^3)))+ylab(expression(paste("Tūris, ",ring(A)^3)))+labs(color='Grupė')
 #dev.copy2pdf(device=cairo_pdf,file="Cluster_sidebyside.pdf",width=8,height=7)
 
-voldist2<-ggplot(file_clusters,aes(x=hcluster,y=Volume))+geom_boxplot()+geom_point(data=subset(file_clusters,File %in% c('1UYL','2YEG','3T0H')),aes(color=File),size=6)
+
+
+
+voldist2<-ggplot(file_clusters,aes(x=hcluster,y=Volume))+geom_boxplot()+geom_point(data=subset(file_clusters,File %in% emptyfiles),aes(color=File),size=6)
 voldist2+labs(color='Struktūros\nbe ligando')+xlab('Grupė')+ylab(expression(paste("Tūris, ",ring(A)^3)))
 #dev.copy2pdf(device=cairo_pdf,file="Cluster_variation.pdf",width=8,height=6)
 
@@ -225,8 +252,14 @@ crop$Crop<-TRUE
 uncrop$Crop<-FALSE
 
 
-allsum<-merge(crop,uncrop, all.x = TRUE, all.y = TRUE)
+#allsum<-merge(crop,uncrop, all.x = TRUE, all.y = TRUE)
+
+allsum<-crop
 allsum$Ligand<-FALSE
+
+allsum$Cav_VdW<-allsum$Cavity.volume..A.3/allsum$VdW.volume..A.3
+allsum$Clef_VdW<-allsum$Cleft.volume..A.3/allsum$VdW.volume..A.3
+allsum$Empty_VdW<-(allsum$Cleft.volume..A.3+allsum$Cavity.volume..A.3)/allsum$VdW.volume..A.3
 
 allsum[allsum$File %in% unique(allsum[allsum$Fragment=='L','File']),]$Ligand<-TRUE
 
@@ -234,9 +267,19 @@ allsum[allsum$File %in% unique(allsum[allsum$Fragment=='L','File']),]$Ligand<-TR
 
 
 
-allvols<-melt(allsum,id.vars=colnames(allsum)[c(1:5,13:14)], measure.vars = colnames(allsum)[c(6:11)], variable.name = 'Volume_type' , value.name='Volume')
-allfrags<-dcast(allvols, File + Ligand.name + Crop + Ligand + Volume_type ~ Fragment, value.var='Volume')
+allvols<-melt(allsum,id.vars=colnames(allsum)[c(1:5,13:17)], measure.vars = colnames(allsum)[c(6:11,18:20)], variable.name = 'Volume_type' , value.name='Volume')
+names(allvols)[names(allvols)=="variable"] <- "Volume_type"
+names(allvols)[names(allvols)=="value"] <- "Volume"
+#Mean needs to be fixed, duplicate values
 
+
+
+
+allfrags<-dcast(allvols, File + Ligand.name + Crop + Ligand + Volume_type + Lg_Ki_M ~ Fragment, value.var='Volume',mean)
+
+
+fragcompKP<-ggplot(subset(allfrags,!is.na(Lg_Ki_M) & Volume_type %in% c('Cav_VdW','Clef_VdW','Empty_VdW')),aes(x=P,y=-Lg_Ki_M,color=Crop))+geom_point()+stat_smooth(method = "lm")
+fragcompKP+facet_grid(.~Volume_type,scales='free_x')
 
 fragcompLPL<-ggplot(subset(allfrags,Volume_type %in% c('Protein.volume..A.3')),aes(x=L,y=PL,color=Crop))+geom_point()+stat_smooth(method = "lm")
 fragcompLPL
@@ -248,13 +291,16 @@ fragcompPPL
 allsum<-subset(allsum,Fragment!='L' ) #& File !%in% c('3t10','3t0h')
 allvols<-subset(allvols,Fragment!='L' )
 
+ggplot(allsum,aes(x=Lg_Ki_M,y=Empty_VdW))+geom_point()
+
+
 crop_p<-ggplot(subset(allvols,Volume_type %in% c("Protein.volume..A.3")),aes(x=Volume, fill=Crop))+geom_histogram(binwidth=100,position='identity',alpha=0.5)
 crop_p+facet_grid(.~Fragment)+xlab('Baltymo turis, A^3')
 #dev.copy2pdf(device=cairo_pdf,file="Protein_volume_bef-af_cut.pdf",width=8,height=6)
 
 
-Pvols<-ggplot(subset(allvols,Volume_type %in% c("Protein.volume..A.3")),aes(x=Fragment, y=Volume, fill=Crop))+geom_boxplot()+geom_point(data=subset(allvols,File %in% c('1UYL','2YEG','3T0H') & Volume_type %in% c("Protein.volume..A.3")),aes(color=Crop),size=6)   #geom_point(aes(x=subset(onlyP,File=='1uyl')$hcluster,y=subset(onlyP,File=='1uyl')$Volume,shape="1UYL"),color="red")
-Pvols+xlab('Baltymo turis, A^3')
+Pvols<-ggplot(subset(allvols,Volume_type %in% c("Protein.volume..A.3")),aes(x=Fragment, y=Volume, fill=Crop))+geom_boxplot()+geom_point(data=subset(allvols,File %in% emptyfiles & Volume_type %in% c("Protein.volume..A.3")),aes(color=Crop),size=6)   #geom_point(aes(x=subset(onlyP,File=='1uyl')$hcluster,y=subset(onlyP,File=='1uyl')$Volume,shape="1UYL"),color="red")
+Pvols+ylab('Baltymo turis, A^3')
 
 
 
