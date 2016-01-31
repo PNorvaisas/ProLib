@@ -47,7 +47,6 @@ Flags:
 	-v  Verbose output
 Arguments:
 	-i <file>    Name of input file (structure or text), or .pdb/.pqr to get all pdb/pqr files
-	-r <file>    Name of reference file to use (only if input and reference files are in PDB!)
 	-s <file>    Name of McVol settings file (if not given default settings will be used)
 	-p <file>    PDB info file to use (contains information about the structure of PDB files and ligand choices)
 				 Will be generated in the directory for each run, default name "PDB_info.txt"
@@ -56,7 +55,6 @@ Options:
 	pqr	     Only convert selected files to pqr 
 	mcvol	     Calculate volumes
 	analyze	     Analyze McVol output and generate tables
-	load	     Load previously saved data and continue
 	 
 
 Settings:
@@ -87,26 +85,30 @@ Options:
 <--------------------------------------------->
     Input:	%(ifile)s
  Settings:	%(sfile)s
-Reference:	%(rfile)s
    PQR it:	%(pqr)s 
   Volumes:	%(mcvol)s
   Analyze:	%(doanalyze)s
-     Load:	%(load)s
 <--------------------------------------------->
 	'''
 
 
 
 def main(argv=None):
+	#This is a wrapper containing main program workflow
+	#At first I provide default variable values
 	dset={'nmc':200, 'surfPT':2500, 'probe':1.3, 'membZmin':-100, 'membZmax':100, 'startgridspacing':1.0, 'membgridspacing':2.0, 'cavgridspacing':0.1, 'minVol':1, 'waterVol':18, 'DummyRad':1.7, 'blab':0, 'MembDim':4, 'CoreZMin':0, 'CoreZMax':0, 'CoreDim':0, 'CleftDim':3, 'CleftRel':70, 'CleftMethod':2, 'SurfaceCluster':1.5}
+	#Settings template file
 	settmp=''
+	#Generate settings file from default values provided in dset map object
 	for ds in dset.keys():
-		print ds, dset[ds]
+		#print ds, dset[ds]
 		settmp=settmp+'{} {}\n'.format(ds,dset[ds])
+	#Input file
 	ifile=""
+	#Settings file
 	sfile=''
-	rfile=''
 	rname=''
+	cores=2
 	#reference=False
 	pqr=True
 	doanalyze=True
@@ -119,7 +121,7 @@ def main(argv=None):
 		argv = sys.argv
 	try:
 		try:
-			opts, args = getopt.getopt(argv[1:], "hi:s:p:", ["help"])
+			opts, args = getopt.getopt(argv[1:], "hi:s:p:c:", ["help"])
 		except getopt.error, msg:
 			raise Usage(msg)
 
@@ -129,32 +131,36 @@ def main(argv=None):
 				usage()
 				return	
 			if option in ("-i", "--input"):
+				#Input file can be one pdb/pqr file, file containing list of pdb/pqr files or wildcard-type input .pdb/.pqr
 				ifile=value	
 			if option in ("-s", "--settings"):
+				#Enabled input of custom setting file - good for testing different parameters
 				sfile=value
 			if option in ("-p", "--pdbinfofile"):
+				#User can manually provide PDB_info file
 				pdbinfofile=value
+			if option in ("-c", "--cores"):
+				#Set the number of cores to use
+				cores=int(value)
 	
 	
-		for argument in args:		
+		for argument in args:
 			if argument in ("pqr", "--onlypqr"):
+				#Only generate pqr files
 				pqr = True
 				mcvol=False
 				doanalyze=False
 			if argument in ("mcvol", "--mcvol"):
+				#Perform colume calculation on previously generated pqr files
 				mcvol = True
 				pqr=False
 				doanalyze=False
 			if argument in ("analyze", "--analyze"):
+				#Analyse output of mcvol
 				doanalyze = True
 				mcvol=False
 				pqr=False
 				load=False
-			if argument in ("load", "--load"):
-				load=True
-				doanalyze = False
-				mcvol=False
-				pqr=False
 			
 
 
@@ -166,7 +172,7 @@ def main(argv=None):
 	#Check for the input integrity
 
 
-
+	#Sanity check for input
 	try:
 		if ifile!="":
 			ipath, iname, itype = filename(ifile)
@@ -211,30 +217,26 @@ def main(argv=None):
 
 
 	print optionsset %vars()
-	if not load :
-		if sfile!='' and os.path.isfile(ifile):
-			spath, sname, stype = filename(sfile)
-			setf=open(sfile,'r')
-			settmp=setf.read()
-			setf.close()
 
 
-		#ilist=[ifile]
+	if sfile!='' and os.path.isfile(ifile):
+		spath, sname, stype = filename(sfile)
+		setf=open(sfile,'r')
+		settmp=setf.read()
+		setf.close()
 
-		ilist=genlist(ifile)
-		print "Input: {}\n".format(', '.join(ilist))
-		if rfile!='' and rfile!='all':
-			rlist=genlist(rfile)
-			print 'Reference:{}\n'.format(rfile)
-			if rfile not in ilist:
-				ilist.extend(rlist)
-		else:
-			rlist=[]	
+
+
+	ilist=genlist(ifile)
+	print "Input: {}\n".format(', '.join(ilist))
+
 	
 	
 	
 
-	
+	#PDB_info file contains PDB file dissection information - which chains to use and which ligands to take
+	#PDB_info file is automatically generated if user makes manual selection of chain and ligand for each PDB file
+	#If PDB file was provided by user - it's not beeing generated in the current run.
 	if os.path.isfile(pdbinfofile):
 		ask='Do you want to use PDB info file {}? (Y/N) '.format(pdbinfofile)
 		answ=raw_input(ask)
@@ -245,8 +247,16 @@ def main(argv=None):
 	else:
 		answ='N'
 
-
+	#--------------------------------
+	# Workflow is divided into several main tasks:
+	# 1. pqr - collect info on pdb file locations and convert them to pqr
+	# 2. mcvol - perform volume calculation
+	# 3. doanalyze - analyze output
+	#To make script start at the specific point in the process corresponding flags can be provided with the input
+	#By default program goes through all steps.
+	#--------------------------------------
 	if pqr:
+		#Collect information on
 		links, pdbdata=prepare(ilist,pdbdata,pqr)
 		if answ=='N' and not os.path.isfile(pdbinfofile):
 			writepdbdata(pdbdata)		
@@ -254,7 +264,7 @@ def main(argv=None):
 	if mcvol:
 		if not pqr:
 			links, pdbdata=prepare(ilist,pdbdata,pqr)
-		outputs=volumeit_M(links,settmp,16)
+		outputs=volumeit_M(links,settmp,cores)
 		#sys.exit(1)
 		saveout(outputs)
 
@@ -263,51 +273,24 @@ def main(argv=None):
 			links, pdbdata=prepare(ilist,pdbdata,pqr)
 			outputs=collect(links)
 
+		#Analyze McVol outputs
 		odata=analyze(outputs)
-
+		#Join all cavities/clefts to one pqr file
 		odata=joincav(odata)
-
-		odata=vmdit(odata,rname)
-
 	
-
+		#Find centers for all cavities/clefts
 		odata = findcenters(odata)
-
-		f = open('Odata_center.pckl', 'w')
+		#Pickle center data for later use
+		f = open('Odata_all.pckl', 'w')
 		pickle.dump(odata, f)
 		f.close()
-		
-		#results=align_M(odata,rname,20)
+		#Generate summary tables
+		tables=summarize(odata,pdbdata)
+		#Write tables
+		writesheets(tables)
 
-		#f = open('Odata_results.pckl', 'w')
-		#pickle.dump([odata,results], f)
-		#f.close()
+		print 'Results written!'
 
-		print 'It works'
-		#sys.exit(1)
-		#odata=finddiff(odata,rname)
-
-		#tables=summarize(odata,pdbdata)
-		#writesheets(tables)
-	if load or doanalyze:
-		if os.path.isfile('Odata_center.pckl'):
-			f = open('Odata_center.pckl', 'rb')
-			odata=pickle.load(f)
-			f.close()
-			tables=summarize(odata,pdbdata)
-
-			if os.path.isfile('Odata_results.pckl'):			
-				f = open('Odata_results.pckl', 'rb')
-				odata,results=pickle.load(f)
-				f.close()
-				restab=summalign(odata,results)
-				tables['Alignment']=restab
-		
-		
-			writesheets(tables)
-
-			print 'Results written!'
-		
 	
 	
 	
@@ -381,73 +364,73 @@ def summarize(odata,pdbdata):
 	tables['Volumes']=results		
 	tables['Summary']=summary
 	return tables
-
-
-def summalign(odata,results):
-	aligntable=[]
-	header=['Reference','R Frag','Target','T Frag','Alignment','R index','R Type','R Volume','R Waters placed','Rx','Ry','Rz','T index', 'T Type','T Volume','T Waters placed','Tx','Ty','Tz']
-	aligntable.append(header)	
-	vkeys=['Type','Volume','Waters','Center']	
-	for k in results.keys():
-		ref,tgt=k.split('_')
-		for f in results[k].keys():
-			ref_f,tgt_f=f.split('_')
-			rdat=odata[ref][ref_f]['Volumes']
-			tdat=odata[tgt][tgt_f]['Volumes']
-			for al in results[k][f]:
-				#print k,f,al,al[0],al[1],al[2]
-				alin=al[0]
-				rin=al[1]
-				tin=al[2]
-				rline=[ref,ref_f,tgt,tgt_f,alin]
-				if rin!='':
-					rline.append(rin)
-					rline=getcavdat2(rdat,rin,rline,vkeys)
-				else:
-					rline.extend(['','','','','','',''])
-				if tin!='':
-					rline.append(tin)
-					rline=getcavdat2(tdat,tin,rline,vkeys)
-				else:
-					rline.extend(['','','','','','',''])
-				
-				aligntable.append(rline)
-				
-	return aligntable
-
-
-def getcavdat(dataset, fragment, line, dkeys):
-	#Generates links to McVol results
-	for c in dkeys:						
-		if c in dataset.keys():
-			if c=='Link':
-				link=dataset[c]
-				link="{}/{}".format(fragment,link)
-				line.append(link)
-			elif c=='Center':
-				cnt=dataset[c]
-				line.extend([dataset[c][0],dataset[c][1],dataset[c][2]])
-			else: 
-				line.append(dataset[c])
-		else:
-			line.append('')
-	return line
-
-def getcavdat2(dataset,c,line, dkeys):
-	#Generates links to McVol results					
-	if c in dataset.keys():
-		vol=dataset[c]
-		for d in dkeys:
-			if d=='Center':
-				cnt=vol[d]
-				line.extend([cnt[0],cnt[1],cnt[2]])
-			else: 
-				line.append(vol[d])
-	else:
-		line.extend(['','','','','',''])
-
-	return line
-
+#
+#
+# def summalign(odata,results):
+# 	aligntable=[]
+# 	header=['Reference','R Frag','Target','T Frag','Alignment','R index','R Type','R Volume','R Waters placed','Rx','Ry','Rz','T index', 'T Type','T Volume','T Waters placed','Tx','Ty','Tz']
+# 	aligntable.append(header)
+# 	vkeys=['Type','Volume','Waters','Center']
+# 	for k in results.keys():
+# 		ref,tgt=k.split('_')
+# 		for f in results[k].keys():
+# 			ref_f,tgt_f=f.split('_')
+# 			rdat=odata[ref][ref_f]['Volumes']
+# 			tdat=odata[tgt][tgt_f]['Volumes']
+# 			for al in results[k][f]:
+# 				#print k,f,al,al[0],al[1],al[2]
+# 				alin=al[0]
+# 				rin=al[1]
+# 				tin=al[2]
+# 				rline=[ref,ref_f,tgt,tgt_f,alin]
+# 				if rin!='':
+# 					rline.append(rin)
+# 					rline=getcavdat2(rdat,rin,rline,vkeys)
+# 				else:
+# 					rline.extend(['','','','','','',''])
+# 				if tin!='':
+# 					rline.append(tin)
+# 					rline=getcavdat2(tdat,tin,rline,vkeys)
+# 				else:
+# 					rline.extend(['','','','','','',''])
+#
+# 				aligntable.append(rline)
+#
+# 	return aligntable
+#
+#
+# def getcavdat(dataset, fragment, line, dkeys):
+# 	#Generates links to McVol results
+# 	for c in dkeys:
+# 		if c in dataset.keys():
+# 			if c=='Link':
+# 				link=dataset[c]
+# 				link="{}/{}".format(fragment,link)
+# 				line.append(link)
+# 			elif c=='Center':
+# 				cnt=dataset[c]
+# 				line.extend([dataset[c][0],dataset[c][1],dataset[c][2]])
+# 			else:
+# 				line.append(dataset[c])
+# 		else:
+# 			line.append('')
+# 	return line
+#
+# def getcavdat2(dataset,c,line, dkeys):
+# 	#Generates links to McVol results
+# 	if c in dataset.keys():
+# 		vol=dataset[c]
+# 		for d in dkeys:
+# 			if d=='Center':
+# 				cnt=vol[d]
+# 				line.extend([cnt[0],cnt[1],cnt[2]])
+# 			else:
+# 				line.append(vol[d])
+# 	else:
+# 		line.extend(['','','','','',''])
+#
+# 	return line
+#
 
 
 def joincav(odata):
@@ -598,54 +581,11 @@ def tableout(inp):
 
 	return table
 
-def vmdit(odata,rname):
-	#Generates VMD script chich allows quick visualization of McVol output
-	script={'Header':'#!/usr/bin/tclsh\n',
-		'Protein':'mol new %(Protein)s\nset P %(molnr)d\n',
-		'Pcav':'mol new %(Pcav)s\nset Pcav %(molnr)d\nmol modstyle 0 $Pcav Lines\n',
-		'Pclef':'mol new %(Pclef)s\nset Pclef %(molnr)d\nmol modstyle 0 $Pclef Lines\nmol modcolor 0 $Pclef Element\n',
-		'Ligand':'mol new %(Ligand)s\nset L %(molnr)d\nmol modstyle 0 $L Licorice\n',
-		'PLcav':'mol new %(PLcav)s\nset PLcav %(molnr)d\nmol modstyle 0 $PLcav Points 16.0\n',
-		'PLclef':'mol new %(PLclef)s\nset PLclef %(molnr)d\nmol modstyle 0 $PLclef Points 16.0\nmol modcolor 0 $PLclef Element\n'
-		}
-	
-	files={}
-	
-	for k in odata.keys():		
-		frags=odata[k]
-		for f in frags.keys():
-			general=odata[k][f]['General']
-			if f in ['P','vol']:
-				files['Protein']='{}_{}.pdb'.format(k,f)		
-			if f=='L':
-				files['Ligand']='{}_{}.pdb'.format(k,f)
-			if f in ['P','PL']:
-				if 'Cavity link' in general.keys():
-					files[f+'cav']=general['Cavity link'].split('/')[1]
-				if 'Cleft link' in general.keys():
-					files[f+'clef']=general['Cleft link'].split('/')[1]
-		#print files
-		#print general
-		scrfile=open('{}/{}.tcl'.format(k,k),'w')
-		scrfile.write(script['Header'])
-		files['molnr']=0
-		for e in ['Protein','Pcav','Pclef','Ligand','PLcav','PLclef']:
-			if e in files.keys():
-				string=script[e]
-				scrfile.write(string % files)
- 				files['molnr']=files['molnr']+1
-		scrfile.close()
-		odata[k][f]['General']['Tcl script']='{}.tcl'.format(k)
-	return odata
-
-
-
-
 					
 	
 
 def volumeit(links,settings):
-	#McVol execution
+	#McVol execution - single threaded
 	outputs=NestedDict()
 
 	for k in links.keys():
@@ -679,6 +619,7 @@ def volumeit(links,settings):
 	return outputs
 
 def mcvolhandler((k,f,settings,q)):
+	#Multi-threaded execution McVol handler
 	if f!='' and os.path.isfile(f):
 		fpath, fname, ftype=filename(f)
 		if '_' in fname:
@@ -708,7 +649,7 @@ def mcvolhandler((k,f,settings,q)):
 
 
 def volumeit_M(links,settings,cores):
-	#McVol execution
+	#Multi-threaded McVol execution
 	outputs=NestedDict()
 
 	p=Pool(cores)
@@ -779,23 +720,14 @@ def saveout(outputs):
 			ofile.close()
 
 def writesheets(sheets):
-	#Writes organized data to file.
+	#Writes organized data from sheets object to file.
 	#odir=dircheck('Split')
 	for i in sheets.keys():
 		if i in ['Summary','Volumes','Alignment']:
 			oname=i+".csv"
 		else:
 			print 'Unknown key for table: {}'.format(i)
-			
 
-		#else:
-		#	if '_' in i:
-		#		tp=i.split('_')[1]
-		#		nm=i.split('_')[0]
-		#	else:
-		#		nm=i
-		#		tp='results'	
-		#	oname="{}/{}_{}.csv".format(nm,nm,tp)
 		ofile=csv.writer(open(oname,"wb"), dialect='excel') #,delimiter=';', quotechar='"', quoting=csv.QUOTE_ALL
 		for row in sheets[i]:
 			row = [item.encode("utf-8") if isinstance(item, unicode) else str(item) for item in row]
@@ -900,7 +832,7 @@ def collect(links):
 	return outputs
 
 def analyze(outputs):
-	#Collects data from McVol results data into map data structure which is later used for data saving.
+	#Collects data from McVol results into map data structure which is later used for data saving.
 	odata=NestedDict()
 	for k in outputs.keys():
 		lower=outputs[k]
@@ -964,11 +896,11 @@ def pqrit(ifile):
 		ofile=''
 	else:
 		fixpqr(ofile)
-
+	#Generated pqr file is not recognised by McVol and needs further modeifications done by fixpqr function
 	return ofile
 
 def splitpdb(ifile, odata, ligname=''):
-	#PDB parsing engine that let's the user select ligand or ligands and saves their choices.
+	#PDB parsing engine that let's the user select PDB chain, ligand or ligands and saves their choices.
 	info=NestedDict()
 	ipath, iname, itype=filename(ifile)
 	u=MD.Universe(ifile)
@@ -1244,17 +1176,20 @@ def fixpqr(ifile):
 	
 
 def runcmd(cmd):
+	#Wrapper for execution of programs
 	failure, output = commands.getstatusoutput(cmd)
 	if failure:
 		print '''Running failed \n %(cmd)s \n %(output)s'''.encode('utf-8') % vars();
 	return failure, output
 
 class NestedDict(dict):
+	#Infinite map class which allows to organise data
 	def __getitem__(self, key):         
 		if key in self: return self.get(key)
 		return self.setdefault(key, NestedDict())
 
 def numerize(s):
+	#Convert values to numbers
     try:
 	if s=='NAN':
 		return s
@@ -1270,6 +1205,7 @@ def numerize(s):
         return s
 	
 def filename(ifile):
+	#Filename parser that separates path, name and extension
 	if ifile.split('.')[0]=='':
 		ipat=''
 		iname=''
@@ -1292,6 +1228,8 @@ def filename(ifile):
 	return ipat, iname, itype
 
 def dircheck(somedir):
+	#Checks for the presence of given directory and allows user to make selection what to do with it
+	#Delete and overwrite, overwrite contents, change output directory
 	while True:   	
 		if os.path.exists(somedir):
 			qstn = "Directory %(somedir)s already exists! Delete, quit, continue or provide a new name (d/q/c/<type name>): " % vars()
@@ -1315,6 +1253,7 @@ def dircheck(somedir):
 
 
 def install(package):
+	#Installs packages if they are not present
 	pip.main(['install', package])
 
 
