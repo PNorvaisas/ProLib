@@ -3,12 +3,17 @@
 #sys.setdefaultencoding('iso-8859-1')
 #Get sequences of PDB structures
 
+import platform
+platform.python_version()
+
+
+
 for mod in ['pip','re','csv','sys','os','commands','datetime','operator','getopt','subprocess','pickle','shutil','glob','types','math','copy','Bio.SeqIO']:
 	try:
 		exec "import %(mod)s" % vars()
 	except ImportError, e:
 		print "Module not found %(mod)s\nTrying to install!" % vars()
-		install(mod)		
+		install(mod)
 		#pass # module doesn't exist, deal with it.
 
 import Bio.SeqIO
@@ -71,6 +76,8 @@ ipath, iname, itype=filename(ifile)
 u=MD.Universe(ifile)
 chain=u.selectAtoms('segid A')
 p=chain.selectAtoms('protein')
+#print p.resnames
+
 ress=''.join([ aa[res] for res in p.resnames() if res in aa.keys()])
 sumff=open(summ,"a")
 sumf=csv.writer(sumff, dialect='excel')

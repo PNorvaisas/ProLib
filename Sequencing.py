@@ -25,6 +25,14 @@ try:
 except ImportError, e:
 	print "Module MDAnalysis not found"
 
+def writecsv(data,ofile,delim='\t'):
+	f=open(ofile,'wb')
+	ofile=csv.writer(f, delimiter=delim) # dialect='excel',delimiter=';', quotechar='"', quoting=csv.QUOTE_ALL
+	for row in data:
+		#row = [item.encode("utf-8") if isinstance(item, unicode) else str(item) for item in row]
+		ofile.writerow(row)
+	f.close()
+
 
 
 def filename(ifile):
@@ -57,6 +65,7 @@ def dircheck(somedir):
 
 def align(seq1,seq2):
 	matrix = matlist.blosum62
+	#Gap open and extend scores determine penalty for creating a gap in alignment
 	gap_open = -10
 	gap_extend = -0.5
 	#alns = pairwise2.align.localxx(seq1, seq2)
@@ -66,6 +75,7 @@ def align(seq1,seq2):
 
 def alignlocal(seq1,seq2):
 	matrix = matlist.blosum62
+	#Gap open and extend scores determine penalty for creating a gap in alignment
 	gap_open = -20
 	gap_extend = -20
 	#alns = pairwise2.align.localxx(seq1, seq2)
@@ -146,28 +156,36 @@ def longmatch(seq,ref):
 def chunkstring(string, length):
     return [string[0+i:length+i] for i in range(0, len(string), length)]
 
-def crop(ifile,mstring,aminoacids):
-    outdata=[]
-    ipath, iname, itype=filename(ifile)
+def crop(ifile,mstring,odir,keepmols=False,onlyfull=True):
+	aas="Ala A, Arg R, Asn N, Asp D, Cys C, Glu E, Gln Q, Gly G, His H, Ile I, Leu L, Lys K, Met M, Phe F, Pro P, Ser S, Thr T, Trp W, Tyr Y, Val V"
+	aa_list=aas.split(',')
+	aa_list=[ aa.split() for aa in aa_list]
+	aminoacids={ a.strip().upper() : b.strip() for a,b in aa_list }
+	outdata=[]
+	ipath, iname, itype=filename(ifile)
     print iname
     u=MD.Universe(ifile)
     for chain in u.segments:
         sname=chain.name
         print "Segment: {}".format(sname)
-        hetatm=chain.selectAtoms('not protein')
         p=chain.selectAtoms('protein')
-        ress=''.join([ aminoacids[res] for res in p.resnames()])
+        ress=''.join([ aminoacids[res] if res in aminoacids.keys() else 'X'  for res in p.resnames()])
         if len(ress)>0:
-            # print "Length of PDB chain: {}".format(len(ress))
+            hetatm=chain.selectAtoms('not protein')
+            # First make alignment with the reference sequence
             results=align(mstring,ress)
-            #record = p.sequence(format='string')
-            #Longest sequence present in PDB also present in reference
-            #Results[1] - PDB, results[0] reference
+
             matches1,lk1=longmatch(results[1], results[0])
             longest1=matches1[lk1[0]]
+            if onlyfull and len(longest1)!=len(mstring):
+	            print 'PDB chain shorter than reference - skipping!'
+	            continue
+
+
             start1,stop1=(int(nr) for nr in lk1[0].split(':'))
             print 'Unadjusted: {}...{}'.format(longest1[:10],longest1[-10:])
             print 'Unadjusted start: {} stop: {} length: {}'.format(start1,stop1,stop1-start1+1)
+
             res2=alignlocal(longest1,ress)
             matches,lk=longmatch(res2[1], res2[0])
             longest=matches[lk[0]]
@@ -178,7 +196,7 @@ def crop(ifile,mstring,aminoacids):
             #Adjust position of residues
             zerores=p.residues.resids()[0]
             print 'Start in PDB: {}'.format(zerores)
-            print p.residues.resids()
+            #print p.residues.resids()
             resseq=p.residues.resids()[start:stop+1]
             #start=start+zerores
             #stop=stop+zerores+1
@@ -199,12 +217,12 @@ def crop(ifile,mstring,aminoacids):
             print "Length of longest matching chain: {}\n".format(len(segment.resnames()))
             print "Longest matching chain:\n{}".format('\n'.join(tw.wrap(segg,50)))
             print "Match length: {}".format(len(segg))
-            if len(hetatm)>0:
+            if len(hetatm)>0 and keepmols:
                 chop=MD.Merge(segment,hetatm)
             else:
                 chop=segment
-            chop.atoms.write('{}_{}_{}{}_cropped.pdb'.format(iname,sname,mstring[0:4],str(len(mstring))))
-            logf=open('{}_{}_{}{}_log.txt'.format(iname,sname,mstring[0:4],str(len(mstring))),'w')
+            chop.atoms.write('{}/{}_{}_{}{}_cropped.pdb'.format(odir,iname,sname,mstring[0:4],str(len(mstring))))
+            logf=open('{}/{}_{}_{}{}_log.txt'.format(odir,iname,sname,mstring[0:4],str(len(mstring))),'w')
             log="Input PDB: {}\nReference amino acid chain:\n{}\n\nAlignment:\n{}\nLongest match: {}\nLongest matching chain:\n{}\nPDB:\n{}\nReference:\n{}".format(ifile,'\n'.join(tw.wrap(mstring,50)),aligned,len(segment.resnames()),'\n'.join(tw.wrap(segg,50)),results[1],results[0])
             logf.write(log)
             logf.close()
