@@ -2,9 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="31165a81-753d-4dbe-a26c-e5d93274ff30" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../../SeqPrep.py" afterPath="$PROJECT_DIR$/../../SeqPrep.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../../Sequencing.py" afterPath="$PROJECT_DIR$/../../Sequencing.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../../voltool2.py" afterPath="$PROJECT_DIR$/../../voltool2.py" />
     </list>
     <ignored path="Sequences.iws" />
@@ -29,8 +26,8 @@
       <file leaf-file-name="voltool2.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/../../voltool2.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.6423221">
-              <caret line="1167" column="16" selection-start-line="1167" selection-start-column="16" selection-end-line="1167" selection-end-column="16" />
+            <state vertical-scroll-proportion="0.52996254">
+              <caret line="1163" column="17" selection-start-line="1163" selection-start-column="17" selection-end-line="1163" selection-end-column="17" />
               <folding />
             </state>
           </provider>
@@ -557,8 +554,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/../../voltool2.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.6423221">
-          <caret line="1167" column="16" selection-start-line="1167" selection-start-column="16" selection-end-line="1167" selection-end-column="16" />
+        <state vertical-scroll-proportion="0.52996254">
+          <caret line="1163" column="17" selection-start-line="1163" selection-start-column="17" selection-end-line="1163" selection-end-column="17" />
           <folding />
         </state>
       </provider>
