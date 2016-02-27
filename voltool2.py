@@ -1165,7 +1165,7 @@ def fixpqr(ifile):
 				#print data
 				#data[1]=int(data[1])
 				#data[4]=int(data[4])
-				#print data			
+				print data
 				if len(data[2])==4:
 					datastr='{0: <5} {1:5d} {2: <4} {3: <4} {5: 4d} {6: 11.3f} {7: 8.3f} {8: 8.3f} {9:.3f} {10:.3f}'.format(*data)
 				else:

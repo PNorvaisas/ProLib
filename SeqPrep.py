@@ -45,7 +45,8 @@ pdbfiles=glob.glob('*.pdb')
 
 data=[]
 matches=[]
-header=['PDB ID','Segments','Length','Longest match','Longest match sequence']
+header=['PDB ID','Segments','Salts_and_water','Heteroatoms','Length','Longest match','Longest match sequence']
+salts=['HOH','ZN','SO4','NI','CO','CU','MN','HG','HGB','CMH','GOL','MBO','CL','BEZ','DMS','BCN','DMS','MES','BME']
 data.append(header)
 for ifile in pdbfiles:
     print ifile
@@ -55,17 +56,20 @@ for ifile in pdbfiles:
 	#Iterate through segments (A,B...) to find ones containing protein sequences
     for seg in u.segments:
         p=seg.selectAtoms('protein')
+        np=seg.selectAtoms('not protein')
         #Check whether segment contains protein groups
         if len(p.resnames())>0:
 	        #print "Segment: {}, residues: {}".format(seg.name,len(p.resnames()))
 			ress=''.join([ aa[res] for res in p.resnames() if res in aa.keys()])
+	        nres=sorted(list(set(np.resnames())))
+            nresc=[r for r in nres if r not in salts]
 			#Find longest matching sequence in the PDB
 			lmatches=lcs(ref,ress)
 	        lmatch=[m for m in lmatches]
             longest=len(lmatch[0])
             matches.append(lmatch[0])
             #print 'Longest: {}'.format(longest)
-			data.append([iname,seg.name,len(ress),longest,lmatch[0]])
+			data.append([iname,seg.name,';'.join(nres),';'.join(nresc),len(ress),longest,lmatch[0]])
 
 
 writecsv(data,'Summary_sequences.csv',delim=',')
@@ -102,7 +106,7 @@ bestmatch.close()
 cropseq=bm
 
 
-#Name the sumamry file according the first 4 letters of the seuence and its length (useful to remember what was happening)
+#Name the summary file according the first 4 letters of the seuence and its length (useful to remember what was happening)
 sfile='Summary_{}{}.csv'.format(cropseq[0:4],str(len(cropseq)))
 
 results=[]
