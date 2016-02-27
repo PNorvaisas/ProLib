@@ -50,6 +50,7 @@ Arguments:
 	-s <file>    Name of McVol settings file (if not given default settings will be used)
 	-p <file>    PDB info file to use (contains information about the structure of PDB files and ligand choices)
 				 Will be generated in the directory for each run, default name "PDB_info.txt"
+	-c <cores>   Number of cores to use
 
 Options:
 	pqr	     Only convert selected files to pqr 
@@ -88,6 +89,7 @@ Options:
    PQR it:	%(pqr)s 
   Volumes:	%(mcvol)s
   Analyze:	%(doanalyze)s
+    Cores:  %(cores)s
 <--------------------------------------------->
 	'''
 
