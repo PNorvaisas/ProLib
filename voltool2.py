@@ -801,17 +801,16 @@ def readpdbdata(pdbfile):
 	data=[row for row in rdr]
 	pdbf.close()
 	header=data[0]
-	psin=header.index('Protein segment')
-	lsin=header.index('Ligand segment')
-	lin=header.index('Ligand name')
-	cm=header.index('Complex')
+	hlabs=['Protein segment','Ligand segment','Ligand name','Complex']
+	hmap={hl : header.index(hl) for hl in hlabs if hl in header }
+	#psin=header.index('Protein segment')
+	#lsin=header.index('Ligand segment')
+	#lin=header.index('Ligand name')
+	#cm=header.index('Complex')
 	for d in data[1:]:
 		print d
-		pdbdata[d[0]]['Protein segment']=d[psin]
-		pdbdata[d[0]]['Ligand segment']=d[lsin]
-		pdbdata[d[0]]['Ligand name']=d[lin]
-		pdbdata[d[0]]['Complex']=d[cm]
-	
+		for k in hmap.keys():
+			pdbdata[d[0]][k]=d[hmap[k]]
 	return pdbdata
 
 def collect(links):

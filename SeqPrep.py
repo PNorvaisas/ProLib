@@ -36,7 +36,7 @@ aa_list=[aa.split() for aa in aa_list]
 aa={ a.strip().upper() : b.strip() for a,b in aa_list }
 
 #Let's go to the directory where PDB structures are kept
-os.chdir('/Users/povilas/Projects/ProLib/CAII_raw')
+os.chdir('/Users/povilas/Projects/ProLib/CAI_raw')
 #Define file containing reference sequence for protein
 ref_file='CAII-P00918_frag.fasta'
 ref=readseq(ref_file)
