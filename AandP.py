@@ -177,8 +177,6 @@ def main(argv=None):
 		#usage()
 		sys.exit(1)
 
-	cores=2
-	ncores=mp.cpu_count()
 	#----------------------------
 	if cores>ncores:
 		cores=ncores
