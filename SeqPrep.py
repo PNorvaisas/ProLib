@@ -36,9 +36,9 @@ aa_list=[aa.split() for aa in aa_list]
 aa={ a.strip().upper() : b.strip() for a,b in aa_list }
 
 #Let's go to the directory where PDB structures are kept
-os.chdir('/Users/povilas/Projects/ProLib/CAI_raw')
+os.chdir('/Users/povilas/Projects/ProLib/CAII_raw/Aligned-Protonated')
 #Define file containing reference sequence for protein
-ref_file='CAII-P00918_frag.fasta'
+ref_file='../CAII-P00918_frag.fasta'
 ref=readseq(ref_file)
 pdbfiles=glob.glob('*.pdb')
 
@@ -118,7 +118,7 @@ odir=dircheck('Cropped')
 #Crop loop for each PDB structure.
 # crop function has default options:
 #keepmols=False - don't keep heteroatoms
-#onlyfull=True - make crop only fur completely matching structures
+#onlyfull=True - make crop only for completely matching structures
 for ifile in pdbfiles:
     res=crop(ifile,cropseq,odir)
     results.extend(res)
