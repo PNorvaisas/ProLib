@@ -36,20 +36,20 @@ aa_list=[aa.split() for aa in aa_list]
 aa={ a.strip().upper() : b.strip() for a,b in aa_list }
 
 #Let's go to the directory where PDB structures are kept
-os.chdir('/Users/povilas/Projects/ProLib/CAII_raw/Aligned-Protonated')
+os.chdir('/Users/povilas/Projects/ProLib/CAII_raw')#
 #Define file containing reference sequence for protein
-ref_file='../CAII-P00918_frag.fasta'
+ref_file='CAII-P00918_frag.fasta'
 ref=readseq(ref_file)
 pdbfiles=glob.glob('*.pdb')
 
 
 data=[]
 matches=[]
-header=['PDB ID','Segments','Salts_and_water','Heteroatoms','Length','Longest match','Longest match sequence']
+header=['PDB ID','Segment','Segments','Salts_and_water','Heteroatoms','Length','Longest match','Longest match sequence']
 salts=['HOH','ZN','SO4','NI','CO','CU','MN','HG','HGB','CMH','GOL','MBO','CL','BEZ','DMS','BCN','DMS','MES','BME']
 data.append(header)
 for ifile in pdbfiles:
-    print ifile
+    print "{} - {}/{}".format(ifile,pdbfiles.index(ifile),len(pdbfiles))
     ipath, iname, itype=filename(ifile)
     #Create MDAnalysis atom universe object
     u=MD.Universe(ifile)
@@ -69,7 +69,7 @@ for ifile in pdbfiles:
             longest=len(lmatch[0])
             matches.append(lmatch[0])
             #print 'Longest: {}'.format(longest)
-			data.append([iname,seg.name,';'.join(nres),';'.join(nresc),len(ress),longest,lmatch[0]])
+			data.append([iname,seg.name,len(u.segments),';'.join(nres),';'.join(nresc),len(ress),longest,lmatch[0]])
 
 
 writecsv(data,'Summary_sequences.csv',delim=',')
@@ -85,8 +85,6 @@ print 'Occurences : Length - Sequence'
 for i in sorted(stat2.keys(),reverse=True):
 	print '{} : {} - {}'.format(i,len(stat2[i]),stat2[i])
 	seqmatches.append([i,len(stat2[i]),stat2[i]])
-
-
 writecsv(seqmatches,'Summary_matches.csv',delim=',')
 
 #Select the sequence which occurs in most structures. This works great with CAII as it is, however ther might be cases where making sequence

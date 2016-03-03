@@ -2,6 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="31165a81-753d-4dbe-a26c-e5d93274ff30" name="Default" comment="">
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/../../AP_script.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/../../AandP.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../../SeqPrep.py" afterPath="$PROJECT_DIR$/../../SeqPrep.py" />
     </list>
     <ignored path="Sequences.iws" />
@@ -26,19 +29,55 @@
       <file leaf-file-name="voltool2.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../../voltool2.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="-7.148148">
-              <caret line="280" column="8" selection-start-line="280" selection-start-column="8" selection-end-line="280" selection-end-column="8" />
+            <state vertical-scroll-proportion="-306.03705">
+              <caret line="1184" column="0" selection-start-line="1177" selection-start-column="0" selection-end-line="1184" selection-end-column="0" />
+              <folding>
+                <element signature="e#537#572#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="SeqPrep.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/../../SeqPrep.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="0.0">
+              <caret line="75" column="0" selection-start-line="73" selection-start-column="0" selection-end-line="75" selection-end-column="0" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="SeqPrep.py" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/../../SeqPrep.py">
+      <file leaf-file-name="Protonate.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/../../Protonate.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.8395722">
-              <caret line="126" column="0" selection-start-line="126" selection-start-column="0" selection-end-line="126" selection-end-column="0" />
+            <state vertical-scroll-proportion="0.0">
+              <caret line="0" column="9" selection-start-line="0" selection-start-column="9" selection-end-line="0" selection-end-column="9" />
               <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="AP_script.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/../../AP_script.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="0.0">
+              <caret line="52" column="0" selection-start-line="52" selection-start-column="0" selection-end-line="54" selection-end-column="17" />
+              <folding>
+                <element signature="e#0#9#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="AandP.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/../../AandP.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="0.85955054">
+              <caret line="204" column="30" selection-start-line="204" selection-start-column="30" selection-end-line="204" selection-end-column="30" />
+              <folding>
+                <element signature="e#537#572#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -66,6 +105,8 @@
         <option value="$PROJECT_DIR$/../../Sequencing.py" />
         <option value="$PROJECT_DIR$/../../voltool2.py" />
         <option value="$PROJECT_DIR$/../../SeqPrep.py" />
+        <option value="$PROJECT_DIR$/../../AP_script.py" />
+        <option value="$PROJECT_DIR$/../../AandP.py" />
       </list>
     </option>
   </component>
@@ -100,8 +141,8 @@
     <panes />
   </component>
   <component name="PropertiesComponent">
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../Sequencing.py" />
-    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../../Metformin/Networking.py" />
+    <property name="settings.editor.selected.configurable" value="PyConsoleConfigurable.Python Console" />
     <property name="settings.editor.splitter.proportion" value="0.2" />
     <property name="FullScreen" value="true" />
   </component>
@@ -114,6 +155,11 @@
       </console-settings>
     </option>
     <option name="myShowDebugConsoleByDefault" value="true" />
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/../.." />
+    </key>
   </component>
   <component name="RunManager">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
@@ -304,7 +350,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
+          <folding>
+            <element signature="e#537#572#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -312,7 +360,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
+          <folding>
+            <element signature="e#537#572#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -328,7 +378,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
           <caret line="5" column="0" selection-start-line="5" selection-start-column="0" selection-end-line="5" selection-end-column="0" />
-          <folding />
+          <folding>
+            <element signature="e#537#572#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -359,7 +411,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
           <caret line="5" column="0" selection-start-line="5" selection-start-column="0" selection-end-line="5" selection-end-column="0" />
-          <folding />
+          <folding>
+            <element signature="e#537#572#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -390,7 +444,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
+          <folding>
+            <element signature="e#537#572#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -428,7 +484,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
+          <folding>
+            <element signature="e#537#572#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -466,7 +524,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
+          <folding>
+            <element signature="e#537#572#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -504,7 +564,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
+          <folding>
+            <element signature="e#537#572#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -512,14 +574,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../../Metformin/Networking.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.5205724">
-          <caret line="827" column="0" selection-start-line="819" selection-start-column="0" selection-end-line="827" selection-end-column="0" />
+          <folding>
+            <element signature="e#537#572#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -552,19 +609,57 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../voltool2.py">
+    <entry file="file://$PROJECT_DIR$/../../SeqPrep.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-7.148148">
-          <caret line="280" column="8" selection-start-line="280" selection-start-column="8" selection-end-line="280" selection-end-column="8" />
+        <state vertical-scroll-proportion="0.0">
+          <caret line="75" column="0" selection-start-line="73" selection-start-column="0" selection-end-line="75" selection-end-column="0" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../SeqPrep.py">
+    <entry file="file://$PROJECT_DIR$/../../Protonate.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.8395722">
-          <caret line="126" column="0" selection-start-line="126" selection-start-column="0" selection-end-line="126" selection-end-column="0" />
+        <state vertical-scroll-proportion="0.0">
+          <caret line="0" column="9" selection-start-line="0" selection-start-column="9" selection-end-line="0" selection-end-column="9" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../../Metformin/Networking.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="18.566845">
+          <caret line="827" column="0" selection-start-line="819" selection-start-column="0" selection-end-line="827" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../voltool2.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="-306.03705">
+          <caret line="1184" column="0" selection-start-line="1177" selection-start-column="0" selection-end-line="1184" selection-end-column="0" />
+          <folding>
+            <element signature="e#537#572#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../AP_script.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="52" column="0" selection-start-line="52" selection-start-column="0" selection-end-line="54" selection-end-column="17" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../AandP.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.85955054">
+          <caret line="204" column="30" selection-start-line="204" selection-start-column="30" selection-end-line="204" selection-end-column="30" />
+          <folding>
+            <element signature="e#537#572#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
