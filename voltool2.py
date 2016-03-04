@@ -1274,8 +1274,9 @@ def splitpdb(ifile, odata, ligname=''):
 
 	if pdbi and 'Complex' in pdbinfo.keys():
 		ionname=pdbinfo['Complex']
-		ion=l.selectAtoms('resname {}'.format(ionname))
-		prot=prot+ion
+		if ionname!='':
+			ion=l.selectAtoms('resname {}'.format(ionname))
+			prot=prot+ion
 
 
 	lig_o=''

@@ -258,7 +258,7 @@ def crop(ifile,mstring,odir,l,ph,keepmols=False,onlyfull=True):
 			logf.close()
 			outdata.append([iname,'Ref',len(segment.resnames()),results[0],segg])
 			outdata.append([iname,sname,len(segment.resnames()),results[1],segg])
-			info.append([iname,sname,';'.join(lsel),';'.join(psel)])
+			info.append([iname,sname,sname,';'.join(lsel),';'.join(psel)])
 
 	return outdata, info
 
