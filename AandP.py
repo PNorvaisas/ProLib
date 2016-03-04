@@ -12,7 +12,7 @@ Copyright (c) 2016. All rights reserved.
 
 
 
-for mod in ['pip','re','csv','sys','os','commands','datetime','operator','getopt','subprocess','pickle','shutil','glob','types','math','copy','time']:
+for mod in ['pip','re','csv','sys','os','commands','datetime','operator','getopt','subprocess','pickle','shutil','glob','types','math','copy','time','string']:
 	try:
 		exec "import %(mod)s" % vars()
 	except ImportError, e:
@@ -23,10 +23,13 @@ for mod in ['pip','re','csv','sys','os','commands','datetime','operator','getopt
 
 from collections import OrderedDict
 from collections import defaultdict
+from string import Template
 import numpy as np
 
 from multiprocessing import Pool, Manager
 import multiprocessing as mp
+
+from voltool2 import *
 
 try:
 	import itertools as IT
@@ -41,7 +44,7 @@ except ImportError, e:
 	print "Module MDAnalysis not found"
 
 help_message = '''
-Use McVol in smart fashion.
+Fast multicore PDB protonation and alignment using Chimera
 
 Flags:
 	-h  Display this help message
@@ -68,6 +71,7 @@ optionsset='''
 Options:
 <--------------------------------------------->
     Input:	%(ifile)s
+      Out:  %(odir)s
    Script:	%(sfile)s
   Batches:  %(batches)s
     Cores:  %(cores)s
@@ -77,6 +81,7 @@ Options:
 
 
 def main(argv=None):
+	odir="Aligned-Protonated"
 	ifile=""
 	#Script file
 	sfile=''
@@ -88,7 +93,7 @@ def main(argv=None):
 		argv = sys.argv
 	try:
 		try:
-			opts, args = getopt.getopt(argv[1:], "hi:b:s:c:", ["help"])
+			opts, args = getopt.getopt(argv[1:], "hi:o:b:s:c:", ["help"])
 		except getopt.error, msg:
 			raise Usage(msg)
 
@@ -99,6 +104,8 @@ def main(argv=None):
 				return
 			if option in ("-i", "--input"):
 				ifile=value
+			if option in ("-o", "--odir"):
+				odir=value
 			if option in ("-b", "--input"):
 				batches=int(value)
 			if option in ("-s", "--script"):
@@ -107,24 +114,6 @@ def main(argv=None):
 				#Set the number of cores to use
 				cores=int(value)
 
-
-		# for argument in args:
-		# 	if argument in ("pqr", "--onlypqr"):
-		# 		#Only generate pqr files
-		# 		pqr = True
-		# 		mcvol=False
-		# 		doanalyze=False
-		# 	if argument in ("mcvol", "--mcvol"):
-		# 		#Perform colume calculation on previously generated pqr files
-		# 		mcvol = True
-		# 		pqr=False
-		# 		doanalyze=False
-		# 	if argument in ("analyze", "--analyze"):
-		# 		#Analyse output of mcvol
-		# 		doanalyze = True
-		# 		mcvol=False
-		# 		pqr=False
-		# 		load=False
 
 
 
@@ -159,13 +148,16 @@ def main(argv=None):
 					print "File %(ifile)s is expected to be a structure file" % vars()
 		if sfile!='' and os.path.isfile(sfile):
 			spath, sname, stype = filename(sfile)
-			print spath
-			if spath!='':
-				print 'Creating temporary script file in working directory....'
-				stemp="{}_temp.{}".format(sname,stype)
-				shutil.copyfile(sfile,stemp)
-			else:
-				stemp=sfile
+			setf=open(sfile,'r')
+			settmp=setf.read()
+			setf.close()
+			t=Template(settmp)
+			smod=t.substitute({'odir':odir})
+			stemp="{}_temp.{}".format(sname,stype)
+			print 'Creating temporary script file in working directory....'
+			stempo=open(stemp,'w')
+			stempo.write(smod)
+			stempo.close()
 		else:
 			raise Exception("No script file specified.")
 
@@ -191,7 +183,7 @@ def main(argv=None):
 	ilist=genlist(ifile)
 
 
-	odir=dircheck("Aligned-Protonated")
+	odir=dircheck(odir)
 	#sys.exit(1)
 	results, log=chimera_M(ilist,stemp,cores,batches)
 	#print outputs
@@ -199,7 +191,11 @@ def main(argv=None):
 		os.remove(stemp)
 		os.remove(stemp.replace('.py','.pyc'))
 
-	lfile=open('Script_execution_log.txt','w')
+	if '../' in odir:
+		od='../'
+	else:
+		od=''
+	lfile=open('{}/Script_execution_log.txt'.format(od),'w')
 	print 'Writing log file...'
 	for item in log:
 		lfile.write("%s\n" % item)
@@ -211,49 +207,6 @@ def main(argv=None):
 
 #-------------Functions------------
 
-
-def runcmd(cmd):
-	#Wrapper for execution of programs
-	failure, output = commands.getstatusoutput(cmd)
-	if failure:
-		print '''Running failed \n %(cmd)s \n %(output)s'''.encode('utf-8') % vars();
-	return failure, output
-
-
-
-class NestedDict(dict):
-	#Infinite map class which allows to organise data
-	def __getitem__(self, key):
-		if key in self: return self.get(key)
-		return self.setdefault(key, NestedDict())
-
-
-def genlist(ifile):
-	#Generates list of input files, checks their existance
-	ilist=[]
-	ipath, iname, itype=filename(ifile)
-	if itype in ['pdb','pqr'] and os.path.isfile(ifile):
-		ilist.append(ifile)
-	elif itype in ['txt',''] and os.path.isfile(ifile):
-		ifl=open(ifile,'r')
-		idata=ifl.read().split('\n')
-		idata=[fl.trim() for fl in idata if fl!='']
-		for fld in idata:
-			ilist.extend(genlist(fld))
-	elif os.path.isdir(ifile):
-		ilist.extend(glob.glob(ifile+"/*.pqr"))
-	elif iname=='' and itype in ['pdb','pqr']:
-		if itype in ['pdb','pqr']:
-			ffiles=glob.glob('*.%(itype)s' % vars())
-			#print ffiles
-			ilist.extend(ffiles)
-		elif itype=='txt':
-			for tfile in glob.glob('*.%(itype)s' % vars()):
-				ilist.extend(genlist(tfile))
-		else:
-			print "Bad file type %(inp)s!" % vars()
-	return sorted(ilist)
-
 def chimerahandler((ifiles,sfile,q)):
 	#Multi-threaded execution McVol handler
 
@@ -264,7 +217,8 @@ def chimerahandler((ifiles,sfile,q)):
 	#print fail, out
 	if len(ifiles)>1:
 		del ifiles[0]
-	q.put(' '.join(ifiles))#'{}'.format(' '.join(ifiles))
+	#for ifl in ifiles:
+	q.put(' '.join(ifiles))
 	#, fail, out
 	return ifiles, fail, out
 
@@ -352,62 +306,6 @@ def chimera_M(ilist,sfile,cores,batches):
 
 
 	return results, log
-
-
-
-def filename(ifile):
-	#Filename parser that separates path, name and extension
-	if ifile.split('.')[0]=='':
-		ipat=''
-		iname=''
-		itype=ifile.split('.')[1]
-	else:
-		if "\\" in ifile.split('.')[0]:
-			sep="\\"
-		elif "/" in ifile.split('.')[0]:
-			sep="/"
-		else:
-			ipat=''
-			iname=ifile.split('.')[0]
-			itype=ifile.split('.')[1]
-			return ipat, iname, itype
-		allpath=ifile.split('.')[0]
-		iname=allpath.split(sep)[-1]
-		ipath=allpath.split(sep)[:-1]
-		ipat='/'.join(ipath)
-		itype=ifile.split('.')[1]
-	return ipat, iname, itype
-
-def dircheck(somedir):
-	#Checks for the presence of given directory and allows user to make selection what to do with it
-	#Delete and overwrite, overwrite contents, change output directory
-	while True:
-		if os.path.exists(somedir):
-			qstn = "Directory %(somedir)s already exists! Delete, quit, continue or provide a new name (d/q/c/<type name>): " % vars()
-			answ = raw_input(qstn)
-			if answ == "d":
-				shutil.rmtree(somedir)
-				os.makedirs(somedir)
-				break
-			elif answ == "q":
-				sys.exit("Have a nice day!")
-			elif answ == "c":
-				break
-			else:
-				somedir=answ
-				continue
-		else:
-			os.makedirs(somedir)
-			break
-	return somedir
-
-
-
-
-
-def install(package):
-	#Installs packages if they are not present
-	pip.main(['install', package])
 
 
 

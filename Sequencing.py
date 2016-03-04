@@ -140,7 +140,7 @@ def longmatch(seq,ref):
                     mlen=len(lseq)
                 elif len(lseq)>mlen:
                     lk.append(key)
-                print '{} - {}'.format(key,len(lseq))
+                #print '{} - {}'.format(key,len(lseq))
                 lseq=[]
             lstart=i+1
         seq=seq[1:]
@@ -164,71 +164,70 @@ def crop(ifile,mstring,odir,keepmols=False,onlyfull=True):
 	aminoacids={ a.strip().upper() : b.strip() for a,b in aa_list }
 	outdata=[]
 	ipath, iname, itype=filename(ifile)
-	print iname
+	#print iname
 	u=MD.Universe(ifile)
-	for chain in u.segments:
-	    sname=chain.name
-	    print "Segment: {}".format(sname)
-	    p=chain.selectAtoms('protein')
-	    ress=''.join([ aminoacids[res] if res in aminoacids.keys() else 'X'  for res in p.resnames()])
-	    if len(ress)>0:
-	        hetatm=chain.selectAtoms('not protein')
-	        # First make alignment with the reference sequence
-	        results=align(mstring,ress)
-
-	        matches1,lk1=longmatch(results[1], results[0])
-	        longest1=matches1[lk1[0]]
-	        if onlyfull and len(longest1)!=len(mstring):
-				print 'PDB chain shorter than reference - skipping!'
+	segids=list(set([segg.id for segg in u.segments]))
+	for sname in segids:
+		chain=u.selectAtoms('segid {}'.format(sname))
+		#print "Segment: {}".format(sname)
+		p=chain.selectAtoms('protein')
+		if len(p.resnames())>0:
+			ress=''.join([ aminoacids[res] if res in aminoacids.keys() else 'X'  for res in p.resnames()])
+			hetatm=chain.selectAtoms('not protein')
+			# First make alignment with the reference sequence
+			results=align(mstring,ress)
+			matches1,lk1=longmatch(results[1], results[0])
+			longest1=matches1[lk1[0]]
+			if onlyfull and len(longest1)!=len(mstring):
+				#print '{} - PDB chain shorter than reference - skipping!'.format(iname)
 				continue
 
+			start1,stop1=(int(nr) for nr in lk1[0].split(':'))
+			#print 'Unadjusted: {}...{}'.format(longest1[:10],longest1[-10:])
+			#print 'Unadjusted start: {} stop: {} length: {}'.format(start1,stop1,stop1-start1+1)
 
-	        start1,stop1=(int(nr) for nr in lk1[0].split(':'))
-	        print 'Unadjusted: {}...{}'.format(longest1[:10],longest1[-10:])
-	        print 'Unadjusted start: {} stop: {} length: {}'.format(start1,stop1,stop1-start1+1)
+			res2=alignlocal(longest1,ress)
+			matches,lk=longmatch(res2[1], res2[0])
+			longest=matches[lk[0]]
 
-	        res2=alignlocal(longest1,ress)
-	        matches,lk=longmatch(res2[1], res2[0])
-	        longest=matches[lk[0]]
-
-	        start,stop=(int(nr) for nr in lk[0].split(':'))
-	        print 'Adjusted: {}...{}'.format(longest[:10],longest[-10:])
-	        print 'Adjusted start: {} stop: {} length: {}'.format(start,stop,stop-start+1)
-	        #Adjust position of residues
-	        zerores=p.residues.resids()[0]
-	        print 'Start in PDB: {}'.format(zerores)
-	        #print p.residues.resids()
-	        resseq=p.residues.resids()[start:stop+1]
-	        #start=start+zerores
-	        #stop=stop+zerores+1
+			start,stop=(int(nr) for nr in lk[0].split(':'))
+			#print 'Adjusted: {}...{}'.format(longest[:10],longest[-10:])
+			#print 'Adjusted start: {} stop: {} length: {}'.format(start,stop,stop-start+1)
+			#Adjust position of residues
+			zerores=p.residues.resids()[0]
+			#print 'Start in PDB: {}'.format(zerores)
+			#print p.residues.resids()
+			resseq=p.residues.resids()[start:stop+1]
+			#start=start+zerores
+			#stop=stop+zerores+1
 
 
-	        segment=p.selectAtoms("resid {}:{}".format(resseq[0],resseq[-1]))
-	        #Test
-	        segg=''.join([ aminoacids[res] for res in segment.resnames() ])#if res in aminoacids.keys()
-	        print 'Final: {}...{}'.format(segg[:10],segg[-10:])
-	        print 'Final start: {} stop: {} length: {}'.format(start,stop,stop-start)
+			segment=p.selectAtoms("resid {}:{}".format(resseq[0],resseq[-1]))
+			#Test
+			segg=''.join([ aminoacids[res] for res in segment.resnames() ])#if res in aminoacids.keys()
+			#print 'Final: {}...{}'.format(segg[:10],segg[-10:])
+			#print 'Final start: {} stop: {} length: {}'.format(start,stop,stop-start)
 
-	        aligned=''
-	        #print chunkstring(results[1],50)
-	        #print results[1]
-	        for a,b in IT.izip(chunkstring(results[1],50),chunkstring(results[0],50)):
-	            aligned=aligned+'PDB '+a+'\nRef '+b+'\n\n'
-	        # print aligned
-	        print "Length of longest matching chain: {}\n".format(len(segment.resnames()))
-	        print "Longest matching chain:\n{}".format('\n'.join(tw.wrap(segg,50)))
-	        print "Match length: {}".format(len(segg))
-	        if len(hetatm)>0 and keepmols:
-	            chop=MD.Merge(segment,hetatm)
-	        else:
-	            chop=segment
-	        chop.atoms.write('{}/{}_{}.pdb'.format(odir,iname,sname)) #,mstring[0:4],str(len(mstring))
-	        logf=open('{}/{}_{}_{}{}_log.txt'.format(odir,iname,sname,mstring[0:4],str(len(mstring))),'w')
-	        log="Input PDB: {}\nReference amino acid chain:\n{}\n\nAlignment:\n{}\nLongest match: {}\nLongest matching chain:\n{}\nPDB:\n{}\nReference:\n{}".format(ifile,'\n'.join(tw.wrap(mstring,50)),aligned,len(segment.resnames()),'\n'.join(tw.wrap(segg,50)),results[1],results[0])
-	        logf.write(log)
-	        logf.close()
-	        outdata.append([iname,'Ref',len(segment.resnames()),results[0],segg])
-	        outdata.append([iname,sname,len(segment.resnames()),results[1],segg])
+			aligned=''
+			#print chunkstring(results[1],50)
+			#print results[1]
+			for a,b in IT.izip(chunkstring(results[1],50),chunkstring(results[0],50)):
+				aligned=aligned+'PDB '+a+'\nRef '+b+'\n\n'
+			# print aligned
+			#print "Length of longest matching chain: {}\n".format(len(segment.resnames()))
+			#print "Longest matching chain:\n{}".format('\n'.join(tw.wrap(segg,50)))
+			#print "Match length: {}".format(len(segg))
+			if len(hetatm)>0 and keepmols:
+				chop=MD.Merge(segment,hetatm)
+			else:
+				chop=segment
+			chop.atoms.write('{}/{}.pdb'.format(odir,iname)) #,mstring[0:4],str(len(mstring))
+			logf=open('{}/{}_{}{}_log.txt'.format(odir,iname,mstring[0:4],str(len(mstring))),'w')
+			log="Input PDB: {}\nReference amino acid chain:\n{}\n\nAlignment:\n{}\nLongest match: {}\nLongest matching chain:\n{}\nPDB:\n{}\nReference:\n{}".format(ifile,'\n'.join(tw.wrap(mstring,50)),aligned,len(segment.resnames()),'\n'.join(tw.wrap(segg,50)),results[1],results[0])
+			logf.write(log)
+			logf.close()
+			outdata.append([iname,'Ref',len(segment.resnames()),results[0],segg])
+			outdata.append([iname,sname,len(segment.resnames()),results[1],segg])
 
 	return outdata
 

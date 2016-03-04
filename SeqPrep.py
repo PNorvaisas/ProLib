@@ -28,6 +28,7 @@ except ImportError, e:
 
 
 from Sequencing import *
+from voltool2 import *
 
 
 aas="Ala A, Arg R, Asn N, Asp D, Cys C, Glu E, Gln Q, Gly G, His H, Ile I, Leu L, Lys K, Met M, Phe F, Pro P, Ser S, Thr T, Trp W, Tyr Y, Val V"
@@ -43,18 +44,24 @@ ref=readseq(ref_file)
 pdbfiles=glob.glob('*.pdb')
 
 
+#u=MD.Universe('1fsn.pdb')
+
+splitdir=dircheck('Split_to_fragments')
+
 data=[]
 matches=[]
 header=['PDB ID','Segment','Segments','Salts_and_water','Heteroatoms','Length','Longest match','Longest match sequence']
 salts=['HOH','ZN','SO4','NI','CO','CU','MN','HG','HGB','CMH','GOL','MBO','CL','BEZ','DMS','BCN','DMS','MES','BME']
 data.append(header)
 for ifile in pdbfiles:
-    print "{} - {}/{}".format(ifile,pdbfiles.index(ifile),len(pdbfiles))
     ipath, iname, itype=filename(ifile)
     #Create MDAnalysis atom universe object
     u=MD.Universe(ifile)
 	#Iterate through segments (A,B...) to find ones containing protein sequences
-    for seg in u.segments:
+    segids=list(set([segg.id for segg in u.segments]))
+    print "{}, S: {} - {}/{}".format(ifile,len(segids),pdbfiles.index(ifile),len(pdbfiles))
+    for segid in segids:
+		seg=u.selectAtoms('segid {}'.format(segid))
         p=seg.selectAtoms('protein')
         np=seg.selectAtoms('not protein')
         #Check whether segment contains protein groups
@@ -69,10 +76,20 @@ for ifile in pdbfiles:
             longest=len(lmatch[0])
             matches.append(lmatch[0])
             #print 'Longest: {}'.format(longest)
-			data.append([iname,seg.name,len(u.segments),';'.join(nres),';'.join(nresc),len(ress),longest,lmatch[0]])
-
+            seg.atoms.write('{}/{}_{}.pdb'.format(splitdir,iname,segid))
+			data.append([iname,segid,len(segids),';'.join(nres),';'.join(nresc),len(ress),longest,lmatch[0]])
 
 writecsv(data,'Summary_sequences.csv',delim=',')
+
+
+#os.chdir(splitdir)
+#Now it's a good time to align and protonate fragments!
+#Run AandP.py in fragments folder
+
+
+
+
+
 
 #Get summary on the matching sequences
 stat=Counter(matches)
@@ -91,7 +108,7 @@ writecsv(seqmatches,'Summary_matches.csv',delim=',')
 #couple of amino acids shorter will increase the number of usable structures.
 bk=sorted(stat2.keys(),reverse=True)[0]
 bm=stat2[bk]
-crop_file='{}-{}_{}.fasta'.format(bk,len(bm),bm[0:4])
+crop_file='{}-{}_{}-best.fasta'.format(bk,len(bm),bm[0:4])
 bestmatch=open(crop_file,'w')
 bestmatch.write(bm)
 bestmatch.close()
@@ -100,7 +117,7 @@ bestmatch.close()
 
 #You can use other sequence file for cropping
 #crop_file='CAII-P00918_frag.fasta'
-#cropseq=readseq(crop_file)
+cropseq=readseq(crop_file)
 cropseq=bm
 
 
