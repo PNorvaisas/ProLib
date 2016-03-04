@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="91665745-2fa9-443e-994f-6168deb6b456" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../../Sequencing.py" afterPath="$PROJECT_DIR$/../../Sequencing.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../../voltool2.py" afterPath="$PROJECT_DIR$/../../voltool2.py" />
     </list>
     <ignored path="Sequences.iws" />
@@ -27,8 +26,8 @@
       <file leaf-file-name="voltool2.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/../../voltool2.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="2.8849556">
-              <caret line="1276" column="23" selection-start-line="1276" selection-start-column="23" selection-end-line="1276" selection-end-column="23" />
+            <state vertical-scroll-proportion="0.539823">
+              <caret line="974" column="39" selection-start-line="974" selection-start-column="39" selection-end-line="974" selection-end-column="39" />
               <folding />
             </state>
           </provider>
@@ -331,8 +330,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/../../voltool2.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="2.8849556">
-          <caret line="1276" column="23" selection-start-line="1276" selection-start-column="23" selection-end-line="1276" selection-end-column="23" />
+        <state vertical-scroll-proportion="0.539823">
+          <caret line="974" column="39" selection-start-line="974" selection-start-column="39" selection-end-line="974" selection-end-column="39" />
           <folding />
         </state>
       </provider>

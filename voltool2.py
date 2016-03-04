@@ -964,7 +964,7 @@ def writepdbdata(pdbdata):
 	pdbfile.write(",".join(['File','Protein segment','Ligand segment','Ligand name'])+"\n")
 	for k in pdbdata.keys():
 		general=pdbdata[k]
-		for val, var in {'Protein segment': 'pseg', 'Ligand segment': 'lseg', 'Ligand name': 'lname'}.iteritems():
+		for val, var in {'Protein segment': 'pseg', 'Ligand segment': 'lseg', 'Ligand name': 'lname', 'Complex': cmpl}.iteritems():
 			#print val, var
 			if val in general.keys():
 				exec('{}="{}"'.format(var,str(general[val])))
@@ -972,7 +972,7 @@ def writepdbdata(pdbdata):
 			else:
 				exec(var+'=""')
 			#assert var == ""
-		datarow=[k,pseg,lseg,lname]
+		datarow=[k,pseg,lseg,lname,cmpl]
 		pdbfile.write(",".join(datarow)+"\n")
 	pdbfile.close()
 
