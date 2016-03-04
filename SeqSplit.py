@@ -294,7 +294,7 @@ def main(argv=None):
 	#couple of amino acids shorter will increase the number of usable structures.
 	bk=sorted(stat2.keys(),reverse=True)[0]
 	bm=stat2[bk]
-	crop_file='{}{}-best.fasta'.format(bk,bm[0:4],len(bm))
+	crop_file='{}{}-best.fasta'.format(bm[0:4],len(bm))
 	bestmatch=open(crop_file,'w')
 	bestmatch.write(bm)
 	bestmatch.close()

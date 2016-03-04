@@ -51,6 +51,7 @@ Arguments:
 	-i <file>    Name of input file (structure or text), or .pdb/.pqr to get all pdb/pqr files
 	-r <file>    Reference sequence file
 	-c <cores>   Number of cores to use
+	-l <Res>     Leave heteroatoms, comma separated values
 	-o <dir>     Output directory
 '''
 
@@ -71,6 +72,7 @@ Options:
 Reference:  %(rfile)s
       Out:  %(odir)s
     Cores:  %(cores)s
+    Leave:  %(leave)s
 <--------------------------------------------->
 	'''
 
@@ -83,12 +85,13 @@ def main(argv=None):
 	rfile=""
 	batches=5
 	cores=2
+	leave=''
 	ncores=mp.cpu_count()
 	if argv is None:
 		argv = sys.argv
 	try:
 		try:
-			opts, args = getopt.getopt(argv[1:], "hi:r:o:c:", ["help"])
+			opts, args = getopt.getopt(argv[1:], "hi:r:o:c:l:", ["help"])
 		except getopt.error, msg:
 			raise Usage(msg)
 
@@ -106,6 +109,9 @@ def main(argv=None):
 			if option in ("-c", "--cores"):
 				#Set the number of cores to use
 				cores=int(value)
+			if option in ("-l", "--leave"):
+				#Set the number of cores to use
+				leave=value
 
 
 
@@ -158,7 +164,10 @@ def main(argv=None):
 	aa_list=[aa.split() for aa in aa_list]
 	aa={ a.strip().upper() : b.strip() for a,b in aa_list }
 
-
+	if leave!='':
+		l=leave.split(',')
+	else:
+		l=[]
 
 	if cores>ncores:
 		cores=ncores
@@ -196,7 +205,7 @@ def main(argv=None):
 	blist=slice_list(ilist,cores)
 
 	for ifiles in blist:
-		args.append((ifiles,ref,odir,q))
+		args.append((ifiles,ref,odir,l,q))
 
 	result = p.map_async(crop_handler, args)
 	start=time.time()
@@ -238,11 +247,11 @@ def main(argv=None):
 	writecsv(data,sfile,delim=',')
 
 
-def crop_handler((ifiles,ref,odir,q)):
+def crop_handler((ifiles,ref,odir,l,q)):
 	data=[]
 	matches=[]
 	for ifile in ifiles:
-		res=crop(ifile,ref,odir)
+		res=crop(ifile,ref,odir,l)
 		q.put(ifile)
 		data.extend(res)
 	return ifiles, data
