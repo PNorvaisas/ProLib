@@ -72,7 +72,8 @@ Options:
 Reference:  %(rfile)s
       Out:  %(odir)s
     Cores:  %(cores)s
-    Leave:  %(leave)s
+  Ligands:  %(ligands)s
+Protein-h:  %(proteinh)s
 <--------------------------------------------->
 	'''
 
@@ -85,13 +86,14 @@ def main(argv=None):
 	rfile=""
 	batches=5
 	cores=2
-	leave=''
+	proteinh=''
+	ligands=''
 	ncores=mp.cpu_count()
 	if argv is None:
 		argv = sys.argv
 	try:
 		try:
-			opts, args = getopt.getopt(argv[1:], "hi:r:o:c:l:", ["help"])
+			opts, args = getopt.getopt(argv[1:], "hi:r:o:c:l:p:", ["help"])
 		except getopt.error, msg:
 			raise Usage(msg)
 
@@ -109,9 +111,12 @@ def main(argv=None):
 			if option in ("-c", "--cores"):
 				#Set the number of cores to use
 				cores=int(value)
-			if option in ("-l", "--leave"):
+			if option in ("-l", "--ligands"):
 				#Set the number of cores to use
-				leave=value
+				ligands=value
+			if option in ("-p", "--proteinh"):
+				#Set the number of cores to use
+				proteinh=value
 
 
 
@@ -164,10 +169,17 @@ def main(argv=None):
 	aa_list=[aa.split() for aa in aa_list]
 	aa={ a.strip().upper() : b.strip() for a,b in aa_list }
 
-	if leave!='':
-		l=leave.split(',')
+	if proteinh!='':
+		ph=proteinh.split(',')
+	else:
+		ph=[]
+
+	if ligands!='':
+		l=ligands.split(',')
 	else:
 		l=[]
+
+
 
 	if cores>ncores:
 		cores=ncores
@@ -188,12 +200,16 @@ def main(argv=None):
 	else:
 		od=''
 	sfile='{}Summary_{}{}.csv'.format(od,ref[0:4],str(len(ref)))
+	inffile='{}/PDB_info.txt'.format(odir)
 
 	data=[]
-	header=['PDB ID','Segment','Match length','Alignment','Cropped']
-	data.append(header)
+	dheader=['PDB ID','Segment','Match length','Alignment','Cropped']
+	data.append(dheader)
 	data.append(['Ref','Ref',len(ref),ref,ref])
 
+	info=[]
+	iheader=['File','Protein segment','Ligand segment','Ligand name','Complex']
+	info.append(iheader)
 
 	p=Pool(cores)
 	m = Manager()
@@ -205,7 +221,7 @@ def main(argv=None):
 	blist=slice_list(ilist,cores)
 
 	for ifiles in blist:
-		args.append((ifiles,ref,odir,l,q))
+		args.append((ifiles,ref,odir,l,ph,q))
 
 	result = p.map_async(crop_handler, args)
 	start=time.time()
@@ -244,17 +260,21 @@ def main(argv=None):
 		prc=itr*100/len(results)
 		print "{0:3d}%".format(int(prc))
 		data.extend(res[1])
+		info.extend(res[2])
 	writecsv(data,sfile,delim=',')
+	writecsv(info,inffile,delim=',')
 
 
-def crop_handler((ifiles,ref,odir,l,q)):
+def crop_handler((ifiles,ref,odir,c,l,q)):
 	data=[]
+	info=[]
 	matches=[]
 	for ifile in ifiles:
-		res=crop(ifile,ref,odir,l)
+		res,inf=crop(ifile,ref,odir,c,l)
 		q.put(ifile)
 		data.extend(res)
-	return ifiles, data
+		info.extend(inf)
+	return ifiles, data, info
 
 def chunks(l, n):
     """Yield successive n-sized chunks from l."""

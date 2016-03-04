@@ -157,12 +157,13 @@ def chunkstring(string, length):
     return [string[0+i:length+i] for i in range(0, len(string), length)]
 
 
-def crop(ifile,mstring,odir,l,keepmols=False,onlyfull=True):
+def crop(ifile,mstring,odir,l,ph,keepmols=False,onlyfull=True):
 	aas="Ala A, Arg R, Asn N, Asp D, Cys C, Glu E, Gln Q, Gly G, His H, Ile I, Leu L, Lys K, Met M, Phe F, Pro P, Ser S, Thr T, Trp W, Tyr Y, Val V"
 	aa_list=aas.split(',')
 	aa_list=[ aa.split() for aa in aa_list]
 	aminoacids={ a.strip().upper() : b.strip() for a,b in aa_list }
 	outdata=[]
+	info=[]
 	ipath, iname, itype=filename(ifile)
 	#print iname
 	u=MD.Universe(ifile)
@@ -217,8 +218,20 @@ def crop(ifile,mstring,odir,l,keepmols=False,onlyfull=True):
 			#print "Length of longest matching chain: {}\n".format(len(segment.resnames()))
 			#print "Longest matching chain:\n{}".format('\n'.join(tw.wrap(segg,50)))
 			#print "Match length: {}".format(len(segg))
+			#l for ligands
 			if len(l)>0:
-				hsel=[rid for rid in list(set(hetatm.resnames())) if rid in l]
+				lsel=[rid for rid in list(set(hetatm.resnames())) if rid in l]
+			else:
+				lsel=[]
+			#ph for protein heteroatoms
+			if len(ph)>0:
+				psel=[rid for rid in list(set(hetatm.resnames())) if rid in ph]
+			else:
+				psel=[]
+			#All heteroatoms
+			hsel=lsel+psel
+
+			if len(hsel)>0:
 				hcrops=[hetatm.selectAtoms('resname {}'.format(hname)) for hname in hsel]
 				#print '{} {}'.format(len(l),len(hcrops))
 				if len(hcrops)==1:
@@ -228,6 +241,8 @@ def crop(ifile,mstring,odir,l,keepmols=False,onlyfull=True):
 					hatoms=hcrop
 				else:
 					hatoms=''
+			else:
+				hatoms=''
 
 			if len(hatoms)>0:
 				chop=MD.Merge(segment,hatoms)
@@ -243,8 +258,9 @@ def crop(ifile,mstring,odir,l,keepmols=False,onlyfull=True):
 			logf.close()
 			outdata.append([iname,'Ref',len(segment.resnames()),results[0],segg])
 			outdata.append([iname,sname,len(segment.resnames()),results[1],segg])
+			info.append([iname,sname,';'.join(lsel),';'.join(psel)])
 
-	return outdata
+	return outdata, info
 
 
 

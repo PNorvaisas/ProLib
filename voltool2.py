@@ -961,6 +961,7 @@ def prepare(ilist, pdbdata,pqr):
 def writepdbdata(pdbdata):
 	#Saves PDB file parameters chosen by the user
 	pdbfile=open('PDB_info.txt','w')
+	pdbfile.write(",".join(['File','Protein segment','Ligand segment','Ligand name'])+"\n")
 	for k in pdbdata.keys():
 		general=pdbdata[k]
 		for val, var in {'Protein segment': 'pseg', 'Ligand segment': 'lseg', 'Ligand name': 'lname'}.iteritems():
