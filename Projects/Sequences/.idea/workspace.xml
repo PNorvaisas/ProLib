@@ -2,13 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="31165a81-753d-4dbe-a26c-e5d93274ff30" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/../../SeqCrop.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/../../SeqSplit.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../../AP_script.py" afterPath="$PROJECT_DIR$/../../AP_script.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../../AandP.py" afterPath="$PROJECT_DIR$/../../AandP.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../../SeqPrep.py" afterPath="$PROJECT_DIR$/../../SeqPrep.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../../Sequencing.py" afterPath="$PROJECT_DIR$/../../Sequencing.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../../voltool2.py" afterPath="$PROJECT_DIR$/../../voltool2.py" />
     </list>
     <ignored path="Sequences.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -29,11 +23,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="voltool2.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="voltool2.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/../../voltool2.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="-13.814815">
-              <caret line="690" column="24" selection-start-line="690" selection-start-column="24" selection-end-line="690" selection-end-column="24" />
+            <state vertical-scroll-proportion="0.8108614">
+              <caret line="756" column="43" selection-start-line="756" selection-start-column="43" selection-end-line="756" selection-end-column="43" />
               <folding>
                 <element signature="e#537#572#0" expanded="true" />
               </folding>
@@ -83,11 +77,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="AandP.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="AandP.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../../AandP.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="4.1016045">
-              <caret line="193" column="4" selection-start-line="193" selection-start-column="4" selection-end-line="193" selection-end-column="4" />
+            <state vertical-scroll-proportion="-6.5925927">
+              <caret line="93" column="7" selection-start-line="93" selection-start-column="4" selection-end-line="93" selection-end-column="7" />
               <folding>
                 <element signature="e#546#581#0" expanded="true" />
               </folding>
@@ -115,13 +109,13 @@
       <list>
         <option value="$PROJECT_DIR$/../../GetSeq.py" />
         <option value="$PROJECT_DIR$/../../Scrap.py" />
-        <option value="$PROJECT_DIR$/../../voltool2.py" />
         <option value="$PROJECT_DIR$/../../AP_script.py" />
         <option value="$PROJECT_DIR$/../../SeqPrep.py" />
         <option value="$PROJECT_DIR$/../../Sequencing.py" />
         <option value="$PROJECT_DIR$/../../SeqSplit.py" />
         <option value="$PROJECT_DIR$/../../SeqCrop.py" />
         <option value="$PROJECT_DIR$/../../AandP.py" />
+        <option value="$PROJECT_DIR$/../../voltool2.py" />
       </list>
     </option>
   </component>
@@ -651,16 +645,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../voltool2.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-13.814815">
-          <caret line="690" column="24" selection-start-line="690" selection-start-column="24" selection-end-line="690" selection-end-column="24" />
-          <folding>
-            <element signature="e#537#572#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../../SeqPrep.py">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="-14.777778">
@@ -695,10 +679,20 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/../../AandP.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="4.1016045">
-          <caret line="193" column="4" selection-start-line="193" selection-start-column="4" selection-end-line="193" selection-end-column="4" />
+        <state vertical-scroll-proportion="-6.5925927">
+          <caret line="93" column="7" selection-start-line="93" selection-start-column="4" selection-end-line="93" selection-end-column="7" />
           <folding>
             <element signature="e#546#581#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../voltool2.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.8108614">
+          <caret line="756" column="43" selection-start-line="756" selection-start-column="43" selection-end-line="756" selection-end-column="43" />
+          <folding>
+            <element signature="e#537#572#0" expanded="true" />
           </folding>
         </state>
       </provider>

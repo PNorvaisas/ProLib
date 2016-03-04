@@ -753,7 +753,10 @@ def prepare(ilist, pdbdata,pqr):
 					pdb_files, pdbdata=splitpdb(f,pdbdata)
 					pqrfiles=[]
 					for p in pdb_files:
-						pqrfile=pqrit(p)
+						try:
+							pqrfile=pqrit(p)
+						except:
+							print 'Cannot convert {} to PQR! Skipping!'.format(f)
 						pqrfiles.append(pqrfile)
 					links[fname]=pqrfiles
 			elif ftype=='pqr':
