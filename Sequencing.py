@@ -157,7 +157,7 @@ def chunkstring(string, length):
     return [string[0+i:length+i] for i in range(0, len(string), length)]
 
 
-def crop(ifile,mstring,odir,keepmols=False,onlyfull=True):
+def crop(ifile,mstring,odir,l,keepmols=False,onlyfull=True):
 	aas="Ala A, Arg R, Asn N, Asp D, Cys C, Glu E, Gln Q, Gly G, His H, Ile I, Leu L, Lys K, Met M, Phe F, Pro P, Ser S, Thr T, Trp W, Tyr Y, Val V"
 	aa_list=aas.split(',')
 	aa_list=[ aa.split() for aa in aa_list]
@@ -179,7 +179,7 @@ def crop(ifile,mstring,odir,keepmols=False,onlyfull=True):
 			matches1,lk1=longmatch(results[1], results[0])
 			longest1=matches1[lk1[0]]
 			if onlyfull and len(longest1)!=len(mstring):
-				#print '{} - PDB chain shorter than reference - skipping!'.format(iname)
+				print '{} - PDB chain shorter than reference - skipping!'.format(iname)
 				continue
 
 			start1,stop1=(int(nr) for nr in lk1[0].split(':'))
@@ -217,10 +217,25 @@ def crop(ifile,mstring,odir,keepmols=False,onlyfull=True):
 			#print "Length of longest matching chain: {}\n".format(len(segment.resnames()))
 			#print "Longest matching chain:\n{}".format('\n'.join(tw.wrap(segg,50)))
 			#print "Match length: {}".format(len(segg))
-			if len(hetatm)>0 and keepmols:
+			if len(l)>0:
+				hsel=[rid for rid in list(set(hetatm.resnames())) if rid in l]
+				hcrops=[hetatm.selectAtoms('resname {}'.format(hname)) for hname in hsel]
+				#print '{} {}'.format(len(l),len(hcrops))
+				if len(hcrops)==1:
+					hatoms=hcrops[0]
+				elif len(hcrops)>1:
+					hcrop=MD.Merge(*hcrops)
+					hatoms=hcrop
+				else:
+					hatoms=''
+
+			if len(hatoms)>0:
+				chop=MD.Merge(segment,hatoms)
+			elif len(hetatm)>0 and keepmols:
 				chop=MD.Merge(segment,hetatm)
 			else:
 				chop=segment
+
 			chop.atoms.write('{}/{}.pdb'.format(odir,iname)) #,mstring[0:4],str(len(mstring))
 			logf=open('{}/{}_{}{}_log.txt'.format(odir,iname,mstring[0:4],str(len(mstring))),'w')
 			log="Input PDB: {}\nReference amino acid chain:\n{}\n\nAlignment:\n{}\nLongest match: {}\nLongest matching chain:\n{}\nPDB:\n{}\nReference:\n{}".format(ifile,'\n'.join(tw.wrap(mstring,50)),aligned,len(segment.resnames()),'\n'.join(tw.wrap(segg,50)),results[1],results[0])
