@@ -116,6 +116,7 @@ def main(argv=None):
 	doanalyze=True
 	mcvol=True
 	pdbinfofile="PDB_info.txt"
+	useinfo=False
 	pdbdata={}
 	load=False
 
@@ -141,6 +142,7 @@ def main(argv=None):
 			if option in ("-p", "--pdbinfofile"):
 				#User can manually provide PDB_info file
 				pdbinfofile=value
+				useinfo=True
 			if option in ("-c", "--cores"):
 				#Set the number of cores to use
 				cores=int(value)
@@ -239,15 +241,18 @@ def main(argv=None):
 	#PDB_info file contains PDB file dissection information - which chains to use and which ligands to take
 	#PDB_info file is automatically generated if user makes manual selection of chain and ligand for each PDB file
 	#If PDB file was provided by user - it's not beeing generated in the current run.
-	if os.path.isfile(pdbinfofile):
-		ask='Do you want to use PDB info file {}? (Y/N) '.format(pdbinfofile)
-		answ=raw_input(ask)
-		if answ=='Y':
-			pdbdata=readpdbdata(pdbinfofile)
-		else:
-			print 'PDB info file {} not used!'.format(pdbinfofile)
+	if useinfo:
+		pdbdata=readpdbdata(pdbinfofile)
 	else:
-		answ='N'
+		if os.path.isfile(pdbinfofile):
+			ask='Do you want to use PDB info file {}? (Y/N) '.format(pdbinfofile)
+			answ=raw_input(ask)
+			if answ=='Y':
+				pdbdata=readpdbdata(pdbinfofile)
+			else:
+				print 'PDB info file {} not used!'.format(pdbinfofile)
+		else:
+			answ='N'
 
 	#--------------------------------
 	# Workflow is divided into several main tasks:
