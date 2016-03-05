@@ -334,243 +334,6 @@ def genlist(ifile):
 			print "Bad file type %(inp)s!" % vars()
 	return sorted(ilist)
 
-def summarize(odata,pdbdata):
-	#Makes tables out of the map data structure
-	tables=NestedDict()
-	summary=[]
-	results=[]
-
-	sheader=['File','Fragment', 'Protein segment','Ligand segment','Ligand name','Total surface, A^2','Protein volume, A^3','Solvent accessible volume, A^3', 'VdW volume, A^3','Cavity volume, A^3','Cleft volume, A^3','Waters placed']
-	rheader=['File','Fragment','Cavity number','Type','Volume','Waters placed','x','y','z','Link']
-	arkeys=['Number','Type','Volume','Waters','Center','Link']
-
-	results.append(rheader)
-	summary.append(sheader)
-	for k in sorted(odata.keys()):
-		frag=odata[k]
-		#results=[]
-
-		for f in sorted(frag.keys()):
-			general=frag[f]['General']
-			pdb=pdbdata[k]
-			line=[k,f]
-
-			for c in ['Protein segment','Ligand segment','Ligand name','Surface','Volume','SAV','VdW','Cavity volume', 'Cleft volume','Total waters']:
-				if c in general.keys():
-					line.append(general[c])
-				elif c in pdb.keys():
-					line.append(pdb[c])
-				else:
-					line.append('')
-			summary.append(line)
-			cavities=frag[f]['Volumes']
-
-			if len(cavities.keys())!=0:
-				for cav in sorted(cavities.keys()):
-					cavity=cavities[cav]
-					rline=[k,f]
-					rline=getcavdat(cavity,f,rline,arkeys)
-					results.append(rline)
-
-	tables['Volumes']=results
-	tables['Summary']=summary
-	return tables
-#
-#
-# def summalign(odata,results):
-# 	aligntable=[]
-# 	header=['Reference','R Frag','Target','T Frag','Alignment','R index','R Type','R Volume','R Waters placed','Rx','Ry','Rz','T index', 'T Type','T Volume','T Waters placed','Tx','Ty','Tz']
-# 	aligntable.append(header)
-# 	vkeys=['Type','Volume','Waters','Center']
-# 	for k in results.keys():
-# 		ref,tgt=k.split('_')
-# 		for f in results[k].keys():
-# 			ref_f,tgt_f=f.split('_')
-# 			rdat=odata[ref][ref_f]['Volumes']
-# 			tdat=odata[tgt][tgt_f]['Volumes']
-# 			for al in results[k][f]:
-# 				#print k,f,al,al[0],al[1],al[2]
-# 				alin=al[0]
-# 				rin=al[1]
-# 				tin=al[2]
-# 				rline=[ref,ref_f,tgt,tgt_f,alin]
-# 				if rin!='':
-# 					rline.append(rin)
-# 					rline=getcavdat2(rdat,rin,rline,vkeys)
-# 				else:
-# 					rline.extend(['','','','','','',''])
-# 				if tin!='':
-# 					rline.append(tin)
-# 					rline=getcavdat2(tdat,tin,rline,vkeys)
-# 				else:
-# 					rline.extend(['','','','','','',''])
-#
-# 				aligntable.append(rline)
-#
-# 	return aligntable
-#
-#
-def getcavdat(dataset, fragment, line, dkeys):
-	#Generates links to McVol results
-	for c in dkeys:
-		if c in dataset.keys():
-			if c=='Link':
-				link=dataset[c]
-				link="{}/{}".format(fragment,link)
-				line.append(link)
-			elif c=='Center':
-				cnt=dataset[c]
-				line.extend([dataset[c][0],dataset[c][1],dataset[c][2]])
-			else:
-				line.append(dataset[c])
-		else:
-			line.append('')
-	return line
-#
-# def getcavdat2(dataset,c,line, dkeys):
-# 	#Generates links to McVol results
-# 	if c in dataset.keys():
-# 		vol=dataset[c]
-# 		for d in dkeys:
-# 			if d=='Center':
-# 				cnt=vol[d]
-# 				line.extend([cnt[0],cnt[1],cnt[2]])
-# 			else:
-# 				line.append(vol[d])
-# 	else:
-# 		line.extend(['','','','','',''])
-#
-# 	return line
-#
-
-def joincav_handler((odata_frag,q)):
-	#frags=odata[k]
-	#odata=NestedDict()
-	for k in odata_frag.keys():
-		frags=odata_frag[k]
-		for f in frags.keys():
-			cavdata=frags[f]['Volumes']#odata[k][f]['Volumes']
-			cavname='{}/{}_cavities.pqr'.format(k,k+'-'+f)
-			clfname='{}/{}_clefts.pqr'.format(k,k+'-'+f)
-			cavities=open(cavname,'w')
-			clefts=open(clfname,'w')
-			ica=1
-			icl=1
-
-			for cav in sorted(cavdata.keys()):
-				tp=cavdata[cav]['Type']
-				link=cavdata[cav]['Link']
-				link="{}/{}/{}".format(k,f,link)
-				inp=open(link,'r')
-				idata=inp.read()
-				inp.close()
-				for row in idata.split('\n'):
-					data=[it.strip() for it in row.split()]
-					data=[numerize(it) for it in data]
-					if len(data)==0 or 'END' in data:
-						continue
-					else:
-						if tp=='cavity':
-							data[1]=int(ica)
-						elif tp=='cleft':
-							data[1]=int(icl)
-						#print data
-						datastr='{0: <5} {1:5d}  {2: <3} {3: <4} {4: 4d} {5: 11.3f} {6: 7.3f} {7: 7.3f} {8:5.2f} {9:5.2f}'.format(*data)
-						if tp=='cavity':
-							cavities.write(datastr+'\n')
-							ica=ica+1
-						elif tp=='cleft':
-							clefts.write(datastr+'\n')
-							icl=icl+1
-			cavities.close()
-			clefts.close()
-			if ica==1:
-				os.remove(cavname)
-			else:
-				odata_frag[k][f]['General']['Cavity link']=cavname
-			if icl==1:
-				os.remove(clfname)
-			else:
-				odata_frag[k][f]['General']['Cleft link']=clfname
-		q.put(k)
-		#print type(odata_frag)
-	return odata_frag
-
-def mapmerge(mainmap,map1):
-	"""
-	Deep merge of maps
-	"""
-	for key, value in map1.items():
-		#print key
-		if key in mainmap.keys() and isinstance(value,dict):
-			#print type(value)
-			mainmap[key]=mapmerge(mainmap[key],value)
-		else:
-			mainmap[key] = value
-
-	return mainmap
-
-
-
-
-
-#Not used anymore
-# def joincav(odata):
-# 	#Joins cavities or clefts from multiple files to one file
-# 	print 'Joining cavities and clefts to single files!'
-# 	oks=odata.keys()
-# 	for k in odata.keys():
-# 		prc=float(oks.index(k)+1)*100/float(len(oks))
-# 		print 'Working on: {0} {1:3}/{2:3} {3:3d}%'.format(k,oks.index(k),len(oks),int(prc))
-# 		frags=odata[k]
-# 		for f in frags.keys():
-# 			cavdata=frags[f]['Volumes']#odata[k][f]['Volumes']
-# 			cavname='{}/{}_cavities.pqr'.format(k,k+'-'+f)
-# 			clfname='{}/{}_clefts.pqr'.format(k,k+'-'+f)
-# 			cavities=open(cavname,'w')
-# 			clefts=open(clfname,'w')
-# 			ica=1
-# 			icl=1
-#
-# 			for cav in sorted(cavdata.keys()):
-# 				tp=cavdata[cav]['Type']
-# 				link=cavdata[cav]['Link']
-# 				link="{}/{}/{}".format(k,f,link)
-# 				inp=open(link,'r')
-# 				idata=inp.read()
-# 				inp.close()
-# 				for row in idata.split('\n'):
-# 					data=[it.strip() for it in row.split()]
-# 					data=[numerize(it) for it in data]
-# 					if len(data)==0 or 'END' in data:
-# 						continue
-# 					else:
-# 						if tp=='cavity':
-# 							data[1]=int(ica)
-# 						elif tp=='cleft':
-# 							data[1]=int(icl)
-# 						#print data
-# 						datastr='{0: <5} {1:5d}  {2: <3} {3: <4} {4: 4d} {5: 11.3f} {6: 7.3f} {7: 7.3f} {8:5.2f} {9:5.2f}'.format(*data)
-# 						if tp=='cavity':
-# 							cavities.write(datastr+'\n')
-# 							ica=ica+1
-# 						elif tp=='cleft':
-# 							clefts.write(datastr+'\n')
-# 							icl=icl+1
-# 			cavities.close()
-# 			clefts.close()
-# 			if ica==1:
-# 				os.remove(cavname)
-# 			else:
-# 				odata[k][f]['General']['Cavity link']=cavname
-# 			if icl==1:
-# 				os.remove(clfname)
-# 			else:
-# 				odata[k][f]['General']['Cleft link']=clfname
-#
-# 	return odata
-
-
 
 def multiprocessor(cores,q,func,args,inps):
 	p=Pool(cores)
@@ -629,353 +392,6 @@ def functions_M(func,odata,cores):
 		odata=mapmerge(odata,res)
 	return odata
 
-
-def findcenters_handler((odata_frag,q)):
-	for k in odata_frag.keys():
-		frag=odata_frag[k]
-		for f in frag.keys():
-			vols=frag[f]['Volumes']
-			for v in vols.keys():
-				linkt=vols[v]['Link']
-				#print rlinkt
-				link='{}/{}/'.format(k,f)+linkt
-				#print rlink
-				coords=centerpqr(link)
-				vols[v]['Center']=coords
-		q.put(k)
-	return odata_frag
-
-
-
-
-#Not used anymore
-# def findcenters(odata):
-# 	#Finds center coordinates for cavities and clefts
-# 	print "\nFinding center coordinates for cavities and clefts!\n"
-# 	for k in odata.keys():
-# 		frag=odata[k]
-# 		for f in frag.keys():
-# 			vols=frag[f]['Volumes']
-# 			for v in vols.keys():
-# 				linkt=vols[v]['Link']
-# 				#print rlinkt
-# 				link='{}/{}/'.format(k,f)+linkt
-# 				#print rlink
-# 				coords=centerpqr(link)
-# 				vols[v]['Center']=coords
-# 	return odata
-#
-#
-
-
-
-
-def centerpqr(pqrfile):
-	#Finds the center of body described in PQR file. Approximates it to the nearest point.
-	table=tableout(pqrfile)
-	ttable=zip(*table)
-	#print ttable
-	xc=ttable[5]
-	yc=ttable[6]
-	zc=ttable[7]
-	#print 'Min x:', min(xc)
-	#print 'Min y:', min(yc)
-	#print 'Min z:', min(zc)	
-	xcent=sum(xc)/float(len(xc))
-	ycent=sum(yc)/float(len(yc))
-	zcent=sum(zc)/float(len(zc))
-	#xdif=[abs(x-xcent) for x in xc]
-	#ydif=[abs(y-ycent) for y in yc]
-	#zdif=[abs(z-zcent) for z in zc]
-	distances=[math.sqrt(math.pow(x-xcent,2)+math.pow(y-ycent,2)+math.pow(z-zcent,2)) for x,y,z in IT.izip(xc,yc,zc)]
-	mind=distances.index(min(distances))
-	#print mind
-	#print xc[mind]
-	coords=(xc[mind],yc[mind],zc[mind])
-	#print "Center: ({},{},{})".format(xcent,ycent,zcent) 
-	#print "Chosen:", coords
-
-	return coords
-
-def volsave(pqr,loc,ind,rad):
-	pqrf=open(loc,'w')
-	count=0
-	for x in pqr.keys():
-		ys=pqr[x]
-		for y in ys.keys():
-			for z in ys[y]:
-				count=count+1
-				data=['ATOM',count,'DUM','DUM',ind,x,y,z,ind,rad]
-				datastr='{0: <5} {1:5d}  {2: <3} {3: <4} {4: 4d} {5: 11.3f} {6: 7.3f} {7: 7.3f} {8:5.2f} {9:5.2f}\n'.format(*data)
-				pqrf.write(datastr)
-
-	pqrf.close()
-	return count
-
-
-def inpqr(link,coords,dist=1):
-	#Checks whether the given coordinates exist in PQR file
-	data=tableout(link)
-	ttable=zip(*data)
-	xc=ttable[5]
-	yc=ttable[6]
-	zc=ttable[7]
-	distances=[math.sqrt(math.pow(x-coords[0],2)+math.pow(y-coords[1],2)+math.pow(z-coords[2],2)) for x,y,z in IT.izip(xc,yc,zc)]
-	#print 'Distance', round_to(min(distances),0.01)
-	#Maximal distance between center and any point is 1A
-	if min(distances) <= dist:
-		mind=distances.index(min(distances))
-		return True
-	else:
-		return False
-
-
-
-def round_to(n, precission):
-	#Round a number to desired precision
-	correction = 0.5 if n >= 0 else -0.5
-	return int(n/precission+correction)*precission
-
-def tableout(inp):
-	#Read file to a list
-	ifl=open(inp, 'r')
-	idata=ifl.read()
-	ifl.close()
-	table=[]
-	for row in idata.split('\n'):
-		data=[it.strip() for it in row.split()]
-		data=[numerize(it) for it in data]
-		if len(data)!=0:
-			table.append(data)
-
-	return table
-
-
-
-#Not used anymore
-# def volumeit(links,settings):
-# 	#McVol execution - single threaded
-# 	outputs=NestedDict()
-#
-# 	for k in links.keys():
-# 		for f in links[k]:
-# 			if f!='' and os.path.isfile(f):
-# 				fpath, fname, ftype=filename(f)
-# 				if '_' in fname:
-# 					part=fname.split('_')[1]
-# 				else:
-# 					part='vol'
-# 				wdir=os.path.join(k,part)
-# 				if os.path.isdir(wdir):
-# 					shutil.rmtree(wdir)
-# 				os.makedirs(wdir)
-# 				sfl=fpath+'/'+fname+'.setup'
-# 				sfile=open(sfl,'w')
-# 				sfile.write(settings)
-# 				sfile.close()
-# 				cwwd=os.getcwd()
-# 				print "Calculating: %(fname)s" % vars()
-# 				os.chdir(wdir)
-# 				comm="McVol ../%(fname)s" % vars()
-# 				fail, out=runcmd(comm)
-# 				print fail, out
-# 				os.chdir(cwwd)
-# 				os.remove(sfl)
-# 				if not fail:
-# 					outputs[k][part]=out
-# 				else:
-# 					print out
-# 	return outputs
-
-def mcvolhandler((links_frag,settings,q)):
-	#Multi-threaded execution McVol handler
-	outputs=NestedDict()
-	for k in links_frag.keys():
-		for f in links_frag[k]:
-			if f!='' and os.path.isfile(f):
-				fpath, fname, ftype=filename(f)
-				if '_' in fname:
-					part=fname.split('_')[-1]
-				else:
-					part='vol'
-				wdir=os.path.join(k,part)
-				if os.path.isdir(wdir):
-					shutil.rmtree(wdir)
-				os.makedirs(wdir)
-				sfl=fpath+'/'+fname+'.setup'
-				sfile=open(sfl,'w')
-				sfile.write(settings)
-				sfile.close()
-				cwwd=os.getcwd()
-				print "Calculating: %(fname)s" % vars()
-				os.chdir(wdir)
-				comm="McVol ../%(fname)s" % vars()
-				fail, out=runcmd(comm)
-				#print fail, out
-				os.chdir(cwwd)
-				os.remove(sfl)
-				if not fail:
-					outputs[k][part]=out
-				else:
-					print '{}, {} has failed!'.format(k,part)
-			else:
-				print 'File {} could not be found!'.format(f)
-			q.put('{}_{}'.format(k,part))
-			print '{} done...'.format(fname)
-	return outputs
-
-
-
-def volumeit_M(links,settings,cores):
-	#Multi-threaded McVol execution
-	outputs=NestedDict()
-
-	#p=Pool(cores)
-	m = Manager()
-	q = m.Queue()
-	args=[]
-	inps=[]
-	for k in links.keys():
-		files=links[k]
-		for f in files:
-			fpath, fname, ftype=filename(f)
-			if '_' in fname:
-				part=fname.split('_')[-1]
-			else:
-				part='vol'
-			inps.append('{}_{}'.format(k,part))
-
-	blist=slice_list(links.keys(),cores)
-	for slice in blist:
-		links_frag={lk : links[lk] for lk in slice}
-		args.append((links_frag,settings,q))
-
-	#print args
-	results=multiprocessor(cores,q,mcvolhandler, args,inps)
-	# result = p.map_async(mcvolhandler, args)
-	# start=time.time()
-	# prcprev=0
-	# comp=[]
-	# while True:
-	# 	if result.ready():
-	# 		break
-	# 	else:
-	# 		if q.qsize()>0:
-	# 			res=q.get()
-	# 			if isinstance(res,list):
-	# 				comp.extend(res)
-	# 			else:
-	# 				comp.append(res)
-	# 			prc = float(len(comp)+1)*100/float(len(args))
-	# 			timepassed=float(time.time()-start)
-	# 			if prc>prcprev:
-	# 				#print completed
-	# 				rem=[j for j in inps if j not in comp ]
-	# 				if prc!=0:
-	# 					total=int((timepassed*100/prc))
-	# 					remaining=int((timepassed*100/prc)-timepassed)
-	# 				else:
-	# 					total=int('inf')
-	# 					remaining=int('inf')
-	# 				print "Done {0:3d}%, {1:>5}/{2:<5} remaining: {3:<5} total: {4:<5}".format(int(prc),str(len(comp)),str(len(rem)),str(datetime.timedelta(seconds=remaining)),str(datetime.timedelta(seconds=total)))
-	# 				if len(rem)<5:
-	# 					print 'Working on: {}'.format(rem)
-	# 				prcprev=prc
-	# 	time.sleep(2)
-	# print 'Collecting results....'
-	# results=result.get()
-	#print len(results.keys())
-	itr=0
-	for res in results:
-		itr=itr+1
-		prc=itr*100/len(results)
-		print "{0:3d}%".format(int(prc))
-		outputs=mapmerge(outputs,res)
-
-
-	return outputs
-
-def slice_list(input, size):
-    input_size = len(input)
-    slice_size = input_size / size
-    remain = input_size % size
-    result = []
-    iterator = iter(input)
-    for i in range(size):
-        result.append([])
-        for j in range(slice_size):
-            result[i].append(iterator.next())
-        if remain:
-            result[i].append(iterator.next())
-            remain -= 1
-    return result
-
-def saveout(outputs):
-	#Saves McVol shell output
-	print "Saving outputs..."
-	for k in outputs.keys():
-		newmap=outputs[k]
-		for p in newmap.keys():
-			ofile=open('%(k)s/%(k)s_%(p)s.txt' % vars(), "w")
-			ofile.write(outputs[k][p])
-			ofile.close()
-
-def writesheets(sheets):
-	#Writes organized data from sheets object to file.
-	#odir=dircheck('Split')
-	for i in sheets.keys():
-		if i in ['Summary','Volumes','Alignment']:
-			oname=i+".csv"
-		else:
-			print 'Unknown key for table: {}'.format(i)
-
-		ofile=csv.writer(open(oname,"wb"), dialect='excel') #,delimiter=';', quotechar='"', quoting=csv.QUOTE_ALL
-		for row in sheets[i]:
-			row = [item.encode("utf-8") if isinstance(item, unicode) else str(item) for item in row]
-			ofile.writerow(row)
-		#ofile.close()
-
-#
-# def prepare(ilist, pdbdata,pqr):
-# 	#Generates list of actual files from the input string
-# 	if len(pdbdata.keys())==0:
-# 		pdbdata=NestedDict()
-# 	links={}
-# 	for f in ilist:
-# 		if os.path.isfile(f):
-# 			fpath, fname, ftype=filename(f)
-# 			if ftype=='pdb':
-# 				if not pqr and os.path.exists(fname):
-# 					links[fname]=[it for it in glob.glob('%(fname)s/%(fname)s*.pqr' % vars()) if not 'cavities' in it and not 'clefts' in it]
-# 				else:
-# 					odir=dircheck(fname)
-# 					pdb_files, pdbdata=splitpdb(f,pdbdata)
-# 					pqrfiles=[]
-# 					for p in pdb_files:
-# 						try:
-# 							pqrfile=pqrit(p)
-# 						except:
-# 							print 'Cannot convert {} to PQR! Skipping!'.format(f)
-# 						pqrfiles.append(pqrfile)
-# 					links[fname]=pqrfiles
-# 			elif ftype=='pqr':
-# 				#if "_" in fname:
-# 				#part not finished!!!
-# 				if fname.count('_')>0:
-# 					fname='_'.join(fname.split('_')[:-1])
-# 				if fname in links.keys():
-# 					#print 'Filename', fname
-# 					#print links
-# 					lst=links[fname]
-# 					lst.append(f)
-# 					#print lst
-# 					links[fname]=lst
-# 				else:
-# 					links[fname]=[f]
-# 		else:
-# 			print "No such file %(f)s!" % vars()
-#
-# 	return links, pdbdata
 
 def prepare_M(ilist,pdbdata,pqr,cores):
 	#Generates list of actual files from the input string
@@ -1059,6 +475,389 @@ def prepare_handler((ilist,pdbdata,pqr,q)):
 	return links, pdbdata
 
 
+def joincav_handler((odata_frag,q)):
+	#frags=odata[k]
+	#odata=NestedDict()
+	for k in odata_frag.keys():
+		frags=odata_frag[k]
+		for f in frags.keys():
+			cavdata=frags[f]['Volumes']#odata[k][f]['Volumes']
+			cavname='{}/{}_cavities.pqr'.format(k,k+'-'+f)
+			clfname='{}/{}_clefts.pqr'.format(k,k+'-'+f)
+			cavities=open(cavname,'w')
+			clefts=open(clfname,'w')
+			ica=1
+			icl=1
+
+			for cav in sorted(cavdata.keys()):
+				tp=cavdata[cav]['Type']
+				link=cavdata[cav]['Link']
+				link="{}/{}/{}".format(k,f,link)
+				inp=open(link,'r')
+				idata=inp.read()
+				inp.close()
+				for row in idata.split('\n'):
+					data=[it.strip() for it in row.split()]
+					data=[numerize(it) for it in data]
+					if len(data)==0 or 'END' in data:
+						continue
+					else:
+						if tp=='cavity':
+							data[1]=int(ica)
+						elif tp=='cleft':
+							data[1]=int(icl)
+						#print data
+						datastr='{0: <5} {1:5d}  {2: <3} {3: <4} {4: 4d} {5: 11.3f} {6: 7.3f} {7: 7.3f} {8:5.2f} {9:5.2f}'.format(*data)
+						if tp=='cavity':
+							cavities.write(datastr+'\n')
+							ica=ica+1
+						elif tp=='cleft':
+							clefts.write(datastr+'\n')
+							icl=icl+1
+			cavities.close()
+			clefts.close()
+			if ica==1:
+				os.remove(cavname)
+			else:
+				odata_frag[k][f]['General']['Cavity link']=cavname
+			if icl==1:
+				os.remove(clfname)
+			else:
+				odata_frag[k][f]['General']['Cleft link']=clfname
+		q.put(k)
+		#print type(odata_frag)
+	return odata_frag
+
+
+
+def findcenters_handler((odata_frag,q)):
+	for k in odata_frag.keys():
+		frag=odata_frag[k]
+		for f in frag.keys():
+			vols=frag[f]['Volumes']
+			for v in vols.keys():
+				linkt=vols[v]['Link']
+				#print rlinkt
+				link='{}/{}/'.format(k,f)+linkt
+				#print rlink
+				coords=centerpqr(link)
+				vols[v]['Center']=coords
+		q.put(k)
+	return odata_frag
+
+
+
+
+def centerpqr(pqrfile):
+	#Finds the center of body described in PQR file. Approximates it to the nearest point.
+	table=tableout(pqrfile)
+	ttable=zip(*table)
+	#print ttable
+	xc=ttable[5]
+	yc=ttable[6]
+	zc=ttable[7]
+	#print 'Min x:', min(xc)
+	#print 'Min y:', min(yc)
+	#print 'Min z:', min(zc)
+	xcent=sum(xc)/float(len(xc))
+	ycent=sum(yc)/float(len(yc))
+	zcent=sum(zc)/float(len(zc))
+	#xdif=[abs(x-xcent) for x in xc]
+	#ydif=[abs(y-ycent) for y in yc]
+	#zdif=[abs(z-zcent) for z in zc]
+	distances=[math.sqrt(math.pow(x-xcent,2)+math.pow(y-ycent,2)+math.pow(z-zcent,2)) for x,y,z in IT.izip(xc,yc,zc)]
+	mind=distances.index(min(distances))
+	#print mind
+	#print xc[mind]
+	coords=(xc[mind],yc[mind],zc[mind])
+	#print "Center: ({},{},{})".format(xcent,ycent,zcent)
+	#print "Chosen:", coords
+
+	return coords
+
+
+
+
+
+def summarize(odata,pdbdata):
+	#Makes tables out of the map data structure
+	tables=NestedDict()
+	summary=[]
+	results=[]
+
+	sheader=['File','Fragment', 'Protein segment','Ligand segment','Ligand name','Total surface, A^2','Protein volume, A^3','Solvent accessible volume, A^3', 'VdW volume, A^3','Cavity volume, A^3','Cleft volume, A^3','Waters placed']
+	rheader=['File','Fragment','Cavity number','Type','Volume','Waters placed','x','y','z','Link']
+	arkeys=['Number','Type','Volume','Waters','Center','Link']
+
+	results.append(rheader)
+	summary.append(sheader)
+	for k in sorted(odata.keys()):
+		frag=odata[k]
+		#results=[]
+
+		for f in sorted(frag.keys()):
+			general=frag[f]['General']
+			pdb=pdbdata[k]
+			line=[k,f]
+
+			for c in ['Protein segment','Ligand segment','Ligand name','Surface','Volume','SAV','VdW','Cavity volume', 'Cleft volume','Total waters']:
+				if c in general.keys():
+					line.append(general[c])
+				elif c in pdb.keys():
+					line.append(pdb[c])
+				else:
+					line.append('')
+			summary.append(line)
+			cavities=frag[f]['Volumes']
+
+			if len(cavities.keys())!=0:
+				for cav in sorted(cavities.keys()):
+					cavity=cavities[cav]
+					rline=[k,f]
+					rline=getcavdat(cavity,f,rline,arkeys)
+					results.append(rline)
+
+	tables['Volumes']=results
+	tables['Summary']=summary
+	return tables
+
+
+def getcavdat(dataset, fragment, line, dkeys):
+	#Generates links to McVol results
+	for c in dkeys:
+		if c in dataset.keys():
+			if c=='Link':
+				link=dataset[c]
+				link="{}/{}".format(fragment,link)
+				line.append(link)
+			elif c=='Center':
+				cnt=dataset[c]
+				line.extend([dataset[c][0],dataset[c][1],dataset[c][2]])
+			else:
+				line.append(dataset[c])
+		else:
+			line.append('')
+	return line
+
+
+def mapmerge(mainmap,map1):
+	"""
+	Deep merge of maps
+	"""
+	for key, value in map1.items():
+		#print key
+		if key in mainmap.keys() and isinstance(value,dict):
+			#print type(value)
+			mainmap[key]=mapmerge(mainmap[key],value)
+		else:
+			mainmap[key] = value
+
+	return mainmap
+
+
+def volsave(pqr,loc,ind,rad):
+	pqrf=open(loc,'w')
+	count=0
+	for x in pqr.keys():
+		ys=pqr[x]
+		for y in ys.keys():
+			for z in ys[y]:
+				count=count+1
+				data=['ATOM',count,'DUM','DUM',ind,x,y,z,ind,rad]
+				datastr='{0: <5} {1:5d}  {2: <3} {3: <4} {4: 4d} {5: 11.3f} {6: 7.3f} {7: 7.3f} {8:5.2f} {9:5.2f}\n'.format(*data)
+				pqrf.write(datastr)
+
+	pqrf.close()
+	return count
+
+
+def inpqr(link,coords,dist=1):
+	#Checks whether the given coordinates exist in PQR file
+	data=tableout(link)
+	ttable=zip(*data)
+	xc=ttable[5]
+	yc=ttable[6]
+	zc=ttable[7]
+	distances=[math.sqrt(math.pow(x-coords[0],2)+math.pow(y-coords[1],2)+math.pow(z-coords[2],2)) for x,y,z in IT.izip(xc,yc,zc)]
+	#print 'Distance', round_to(min(distances),0.01)
+	#Maximal distance between center and any point is 1A
+	if min(distances) <= dist:
+		mind=distances.index(min(distances))
+		return True
+	else:
+		return False
+
+
+
+def round_to(n, precission):
+	#Round a number to desired precision
+	correction = 0.5 if n >= 0 else -0.5
+	return int(n/precission+correction)*precission
+
+def tableout(inp):
+	#Read file to a list
+	ifl=open(inp, 'r')
+	idata=ifl.read()
+	ifl.close()
+	table=[]
+	for row in idata.split('\n'):
+		data=[it.strip() for it in row.split()]
+		data=[numerize(it) for it in data]
+		if len(data)!=0:
+			table.append(data)
+
+	return table
+
+
+
+def volumeit_M(links,settings,cores):
+	#Multi-threaded McVol execution
+	outputs=NestedDict()
+
+	#p=Pool(cores)
+	m = Manager()
+	q = m.Queue()
+	args=[]
+	inps=[]
+	for k in links.keys():
+		files=links[k]
+		for f in files:
+			fpath, fname, ftype=filename(f)
+			if '_' in fname:
+				part=fname.split('_')[-1]
+			else:
+				part='vol'
+			inps.append('{}_{}'.format(k,part))
+
+	blist=slice_list(links.keys(),cores)
+	for slice in blist:
+		links_frag={lk : links[lk] for lk in slice}
+		args.append((links_frag,settings,q))
+
+	#print args
+	results=multiprocessor(cores,q,mcvolhandler, args,inps)
+	# result = p.map_async(mcvolhandler, args)
+	# start=time.time()
+	# prcprev=0
+	# comp=[]
+	# while True:
+	# 	if result.ready():
+	# 		break
+	# 	else:
+	# 		if q.qsize()>0:
+	# 			res=q.get()
+	# 			if isinstance(res,list):
+	# 				comp.extend(res)
+	# 			else:
+	# 				comp.append(res)
+	# 			prc = float(len(comp)+1)*100/float(len(args))
+	# 			timepassed=float(time.time()-start)
+	# 			if prc>prcprev:
+	# 				#print completed
+	# 				rem=[j for j in inps if j not in comp ]
+	# 				if prc!=0:
+	# 					total=int((timepassed*100/prc))
+	# 					remaining=int((timepassed*100/prc)-timepassed)
+	# 				else:
+	# 					total=int('inf')
+	# 					remaining=int('inf')
+	# 				print "Done {0:3d}%, {1:>5}/{2:<5} remaining: {3:<5} total: {4:<5}".format(int(prc),str(len(comp)),str(len(rem)),str(datetime.timedelta(seconds=remaining)),str(datetime.timedelta(seconds=total)))
+	# 				if len(rem)<5:
+	# 					print 'Working on: {}'.format(rem)
+	# 				prcprev=prc
+	# 	time.sleep(2)
+	# print 'Collecting results....'
+	# results=result.get()
+	#print len(results.keys())
+	itr=0
+	for res in results:
+		itr=itr+1
+		prc=itr*100/len(results)
+		print "{0:3d}%".format(int(prc))
+		outputs=mapmerge(outputs,res)
+
+
+	return outputs
+
+
+def mcvolhandler((links_frag,settings,q)):
+	#Multi-threaded execution McVol handler
+	outputs=NestedDict()
+	for k in links_frag.keys():
+		for f in links_frag[k]:
+			if f!='' and os.path.isfile(f):
+				fpath, fname, ftype=filename(f)
+				if '_' in fname:
+					part=fname.split('_')[-1]
+				else:
+					part='vol'
+				wdir=os.path.join(k,part)
+				if os.path.isdir(wdir):
+					shutil.rmtree(wdir)
+				os.makedirs(wdir)
+				sfl=fpath+'/'+fname+'.setup'
+				sfile=open(sfl,'w')
+				sfile.write(settings)
+				sfile.close()
+				cwwd=os.getcwd()
+				print "Calculating: %(fname)s" % vars()
+				os.chdir(wdir)
+				comm="McVol ../%(fname)s" % vars()
+				fail, out=runcmd(comm)
+				#print fail, out
+				os.chdir(cwwd)
+				os.remove(sfl)
+				if not fail:
+					outputs[k][part]=out
+				else:
+					print '{}, {} has failed!'.format(k,part)
+			else:
+				print 'File {} could not be found!'.format(f)
+			q.put('{}_{}'.format(k,part))
+			print '{} done...'.format(fname)
+	return outputs
+
+
+
+def slice_list(input, size):
+    input_size = len(input)
+    slice_size = input_size / size
+    remain = input_size % size
+    result = []
+    iterator = iter(input)
+    for i in range(size):
+        result.append([])
+        for j in range(slice_size):
+            result[i].append(iterator.next())
+        if remain:
+            result[i].append(iterator.next())
+            remain -= 1
+    return result
+
+def saveout(outputs):
+	#Saves McVol shell output
+	print "Saving outputs..."
+	for k in outputs.keys():
+		newmap=outputs[k]
+		for p in newmap.keys():
+			ofile=open('%(k)s/%(k)s_%(p)s.txt' % vars(), "w")
+			ofile.write(outputs[k][p])
+			ofile.close()
+
+def writesheets(sheets):
+	#Writes organized data from sheets object to file.
+	#odir=dircheck('Split')
+	for i in sheets.keys():
+		if i in ['Summary','Volumes','Alignment']:
+			oname=i+".csv"
+		else:
+			print 'Unknown key for table: {}'.format(i)
+
+		ofile=csv.writer(open(oname,"wb"), dialect='excel') #,delimiter=';', quotechar='"', quoting=csv.QUOTE_ALL
+		for row in sheets[i]:
+			row = [item.encode("utf-8") if isinstance(item, unicode) else str(item) for item in row]
+			ofile.writerow(row)
+		#ofile.close()
 
 def writepdbdata(pdbdata):
 	#Saves PDB file parameters chosen by the user
@@ -1190,7 +989,7 @@ def splitpdb(ifile, odata, ligname=''):
 	info=NestedDict()
 	ipath, iname, itype=filename(ifile)
 	u=MD.Universe(ifile)
-	print "PDB file {}".format(iname+'.'+itype)
+	#print "PDB file {}".format(iname+'.'+itype)
 	if iname in odata.keys():
 		pdbinfo=odata[iname]
 		pdbi=True
@@ -1437,7 +1236,7 @@ def splitpdb_silent(ifile, odata, ligname=''):
 	info=NestedDict()
 	ipath, iname, itype=filename(ifile)
 	u=MD.Universe(ifile)
-	print "PDB file {}".format(iname+'.'+itype)
+	#print "PDB file {}".format(iname+'.'+itype)
 	if iname in odata.keys():
 		pdbinfo=odata[iname]
 		pdbi=True

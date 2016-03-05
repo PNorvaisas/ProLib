@@ -164,7 +164,7 @@ def main(argv=None):
 
 
 
-	aas="Ala A, Arg R, Asn N, Asp D, Cys C, Glu E, Gln Q, Gly G, His H, Ile I, Leu L, Lys K, Met M, Phe F, Pro P, Ser S, Thr T, Trp W, Tyr Y, Val V"
+	aas="ALA A,ARG R,ASN N,ASP D,CYS C,GLN Q,GLU E,GLY G,HIS H,ILE I,LEU L,LYS K,MET M,PHE F,PRO P,SER S,THR T,TRP W,TYR Y,VAL V,ABA X,ASH D,CIR R,CME C,CMT C,CSD C,CSO C,CSW C,CSX C,CYM C,CYX C,DDE H,GLH G,HID H,HIE H,HIP H,HSD H,HSE H,HSP H,IAS D,KCX K,LYN K,MHO M,MLY K,MSE M,OCS C,PFF F,PTR Y,SEP S,TPO T"
 	aa_list=aas.split(',')
 	aa_list=[aa.split() for aa in aa_list]
 	aa={ a.strip().upper() : b.strip() for a,b in aa_list }
