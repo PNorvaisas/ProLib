@@ -571,8 +571,8 @@ def mapmerge(mainmap,map1):
 
 
 
-def multiprocessor(p,func,args,inps):
-
+def multiprocessor(q,func,args,inps):
+	p=Pool(cores)
 	result = p.map_async(func, args)
 	start=time.time()
 	prcprev=0
@@ -602,7 +602,7 @@ def multiprocessor(p,func,args,inps):
 
 def functions_M(func,odata,cores):
 	#Genral multiprocessing structure
-	p=Pool(cores)
+	#p=Pool(cores)
 	m = Manager()
 	q = m.Queue()
 	args=[]
@@ -615,7 +615,7 @@ def functions_M(func,odata,cores):
 		args.append((odata_frag,q))
 	#print args
 	#sys.exit(1)
-	results=multiprocessor(p,func,args,inps)
+	results=multiprocessor(q,func,args,inps)
 
 	#print results
 	# #print len(results.keys())
@@ -829,7 +829,7 @@ def volumeit_M(links,settings,cores):
 	#Multi-threaded McVol execution
 	outputs=NestedDict()
 
-	p=Pool(cores)
+	#p=Pool(cores)
 	m = Manager()
 	q = m.Queue()
 	args=[]
@@ -850,7 +850,7 @@ def volumeit_M(links,settings,cores):
 		args.append((links_frag,settings,q))
 
 	#print args
-	results=multiprocessor(p,mcvolhandler, args,inps)
+	results=multiprocessor(q,mcvolhandler, args,inps)
 	# result = p.map_async(mcvolhandler, args)
 	# start=time.time()
 	# prcprev=0
@@ -983,7 +983,7 @@ def prepare_M(ilist,pdbdata,pqr,cores):
 	links={}
 
 
-	p=Pool(cores)
+	#p=Pool(cores)
 	m = Manager()
 	q = m.Queue()
 
@@ -993,7 +993,7 @@ def prepare_M(ilist,pdbdata,pqr,cores):
 		args.append((slice,pdbdata,pqr,q))
 	#print args
 	#sys.exit(1)
-	results=multiprocessor(p,prepare_handler,args,ilist)
+	results=multiprocessor(q,prepare_handler,args,ilist)
 
 	#print results
 	# #print len(results.keys())
