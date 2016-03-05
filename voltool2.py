@@ -571,7 +571,8 @@ def mapmerge(mainmap,map1):
 
 
 
-def multiprocessor(func,args,inps):
+def multiprocessor(p,func,args,inps):
+
 	result = p.map_async(func, args)
 	start=time.time()
 	prcprev=0
@@ -614,7 +615,7 @@ def functions_M(func,odata,cores):
 		args.append((odata_frag,q))
 	#print args
 	#sys.exit(1)
-	results=multiprocessor(func,args,inps)
+	results=multiprocessor(p,func,args,inps)
 
 	#print results
 	# #print len(results.keys())
@@ -849,7 +850,7 @@ def volumeit_M(links,settings,cores):
 		args.append((links_frag,settings,q))
 
 	#print args
-	results=multiprocessor(mcvolhandler, args,inps)
+	results=multiprocessor(p,mcvolhandler, args,inps)
 	# result = p.map_async(mcvolhandler, args)
 	# start=time.time()
 	# prcprev=0
@@ -992,7 +993,7 @@ def prepare_M(ilist,pdbdata,pqr,cores):
 		args.append((slice,pdbdata,pqr,q))
 	#print args
 	#sys.exit(1)
-	results=multiprocessor(prepare_handler,args,ilist)
+	results=multiprocessor(p,prepare_handler,args,ilist)
 
 	#print results
 	# #print len(results.keys())
