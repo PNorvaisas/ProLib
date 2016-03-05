@@ -263,19 +263,20 @@ def main(argv=None):
 	#To make script start at the specific point in the process corresponding flags can be provided with the input
 	#By default program goes through all steps.
 	#--------------------------------------
+	print 'Generating PQR files...'
 	if pqr:
 		#Collect information on
 		links, pdbdata=prepare_M(ilist,pdbdata,pqr,cores)#prepare(ilist,pdbdata,pqr)
 		if answ=='N' and not os.path.isfile(pdbinfofile):
 			writepdbdata(pdbdata)
-
+	print 'Calculating volume...'
 	if mcvol:
 		if not pqr:
 			links, pdbdata=prepare_M(ilist,pdbdata,pqr,cores)#prepare(ilist,pdbdata,pqr)
 		outputs=volumeit_M(links,settmp,cores)
 		#sys.exit(1)
 		saveout(outputs)
-
+	print 'Analyzing outputs...'
 	if doanalyze:
 		if not pqr and not mcvol:
 			links, pdbdata=prepare_M(ilist,pdbdata,pqr,cores)#prepare(ilist,pdbdata,pqr)
@@ -502,7 +503,7 @@ def mapmerge(mainmap,map1):
 	for key, value in map1.items():
 		#print key
 		if key in mainmap.keys() and isinstance(value,dict):
-			print type(value)
+			#print type(value)
 			mainmap[key]=mapmerge(mainmap[key],value)
 		else:
 			mainmap[key] = value
@@ -595,13 +596,12 @@ def multiprocessor(cores,q,func,args,inps):
 		time.sleep(2)
 	print 'Collecting results....'
 	results=result.get()
+	#print results
 	return results
 
 
-
-
 def functions_M(func,odata,cores):
-	#Genral multiprocessing structure
+	#General multiprocessing framework
 	#p=Pool(cores)
 	m = Manager()
 	q = m.Queue()
@@ -992,9 +992,9 @@ def prepare_M(ilist,pdbdata,pqr,cores):
 	for slice in blist:
 		args.append((slice,pdbdata,pqr,q))
 	#print args
-	#sys.exit(1)
+	print 'Running on {} cores...'.format(cores)
 	results=multiprocessor(cores,q,prepare_handler,args,ilist)
-
+	print 'Got results!'
 	#print results
 	# #print len(results.keys())
 	# itr=0
@@ -1013,21 +1013,28 @@ def prepare_M(ilist,pdbdata,pqr,cores):
 def prepare_handler((ilist,pdbdata,pqr,q)):
 	links={}
 	for f in ilist:
+		print f
 		if os.path.isfile(f):
 			fpath, fname, ftype=filename(f)
 			if ftype=='pdb':
 				if not pqr and os.path.exists(fname):
 					links[fname]=[it for it in glob.glob('%(fname)s/%(fname)s*.pqr' % vars()) if not 'cavities' in it and not 'clefts' in it]
 				else:
-					odir=dircheck(fname)
+					odir=dircheck(fname,dansw='d')
+					#print 'Test'
 					pdb_files, pdbdata=splitpdb_silent(f,pdbdata)
 					pqrfiles=[]
+					print pdb_files
 					for p in pdb_files:
-						try:
-							pqrfile=pqrit(p)
-						except:
-							print 'Cannot convert {} to PQR! Skipping!'.format(f)
-						pqrfiles.append(pqrfile)
+						if os.path.exists(p):
+							try:
+								pqrfile=pqrit(p)
+								pqrfiles.append(pqrfile)
+							except:
+								print 'Cannot convert {} to PQR! Skipping!'.format(f)
+						else:
+							print 'File {} not found!'.foramt(p)
+					print pqrfiles
 					links[fname]=pqrfiles
 			elif ftype=='pqr':
 				#if "_" in fname:
@@ -1044,7 +1051,7 @@ def prepare_handler((ilist,pdbdata,pqr,q)):
 				else:
 					links[fname]=[f]
 		else:
-			print "No such file %(f)s!" % vars()
+			print "No such file {}!".format(f)
 		q.put(f)
 
 
@@ -1166,7 +1173,7 @@ def pqrit(ifile):
 	ipath, iname, itype=filename(ifile)
 	#print ipath,iname,itype
 	ofile='%(ipath)s/%(iname)s.pqr' % vars()
-	print ofile
+	#print ofile
 	command="obabel -i %(itype)s %(ifile)s -o pqr -O %(ofile)s" % vars()
 	failure, output=runcmd(command)
 	#print output
@@ -1429,7 +1436,7 @@ def splitpdb_silent(ifile, odata, ligname=''):
 	info=NestedDict()
 	ipath, iname, itype=filename(ifile)
 	u=MD.Universe(ifile)
-	#print "PDB file {}".format(iname+'.'+itype)
+	print "PDB file {}".format(iname+'.'+itype)
 	if iname in odata.keys():
 		pdbinfo=odata[iname]
 		pdbi=True
@@ -1666,7 +1673,7 @@ def splitpdb_silent(ifile, odata, ligname=''):
 
 	odata[iname]['Protein segment']=pseg
 
-
+	#print 'Works'
 	return out, odata
 
 
@@ -1754,13 +1761,16 @@ def filename(ifile):
 		itype=ifile.split('.')[1]
 	return ipat, iname, itype
 
-def dircheck(somedir):
+def dircheck(somedir,dansw=''):
 	#Checks for the presence of given directory and allows user to make selection what to do with it
 	#Delete and overwrite, overwrite contents, change output directory
 	while True:
 		if os.path.exists(somedir):
-			qstn = "Directory %(somedir)s already exists! Delete, quit, continue or provide a new name (d/q/c/<type name>): " % vars()
-			answ = raw_input(qstn)
+			if dansw!='' and dansw in ['d','c','q']:
+				answ=dansw
+			else:
+				qstn = "Directory %(somedir)s already exists! Delete, quit, continue or provide a new name (d/q/c/<type name>): " % vars()
+				answ = raw_input(qstn)
 			if answ == "d":
 				shutil.rmtree(somedir)
 				os.makedirs(somedir)
