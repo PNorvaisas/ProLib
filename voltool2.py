@@ -821,6 +821,7 @@ def mcvolhandler((links_frag,settings,q)):
 			else:
 				print 'File {} could not be found!'.format(f)
 			q.put('{}_{}'.format(k,part))
+			print '{} done...'.format(fname)
 	return outputs
 
 
@@ -1013,7 +1014,7 @@ def prepare_M(ilist,pdbdata,pqr,cores):
 def prepare_handler((ilist,pdbdata,pqr,q)):
 	links={}
 	for f in ilist:
-		print f
+		#print f
 		if os.path.isfile(f):
 			fpath, fname, ftype=filename(f)
 			if ftype=='pdb':
@@ -1024,7 +1025,7 @@ def prepare_handler((ilist,pdbdata,pqr,q)):
 					#print 'Test'
 					pdb_files, pdbdata=splitpdb_silent(f,pdbdata)
 					pqrfiles=[]
-					print pdb_files
+					#print pdb_files
 					for p in pdb_files:
 						if os.path.exists(p):
 							try:
@@ -1034,7 +1035,7 @@ def prepare_handler((ilist,pdbdata,pqr,q)):
 								print 'Cannot convert {} to PQR! Skipping!'.format(f)
 						else:
 							print 'File {} not found!'.foramt(p)
-					print pqrfiles
+					#print pqrfiles
 					links[fname]=pqrfiles
 			elif ftype=='pqr':
 				#if "_" in fname:
