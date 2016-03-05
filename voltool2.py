@@ -243,7 +243,7 @@ def main(argv=None):
 	#If PDB file was provided by user - it's not beeing generated in the current run.
 	if useinfo:
 		pdbdata=readpdbdata(pdbinfofile)
-		answ=='Y'
+		answ='Y'
 	else:
 		if os.path.isfile(pdbinfofile):
 			ask='Do you want to use PDB info file {}? (Y/N) '.format(pdbinfofile)
