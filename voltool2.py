@@ -1489,7 +1489,7 @@ def splitpdb_silent(ifile, odata, ligname=''):
 			segs=[]
 			for g in psegs.keys():
 				segs.extend(psegs[g])
-			for s in segs:
+			#for s in segs:
 				#print "Protein segment: {}".format(s)
 				#print "\tProtein: {}".format(info[s]['Protein']['Res'])
 				#if info[s]['Hetero']['Size']!=0:
