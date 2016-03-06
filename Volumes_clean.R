@@ -8,25 +8,30 @@ library(tidyr)
 library(rgl)
 library(cluster)
 
-vols<-read.table('Volumes.csv',sep=',',quote = '"',header = TRUE)
+
+summ<-read.table('Prepared/Summary.csv',sep=',',quote = '"',header = TRUE)
+summ$File<-toupper(summ$File)
+summ[,c('File','Chain')]<- transform(summ, File = colsplit(File, "_", names = c('a', 'b')))$File
+summ<-summ[,colnames(summ)[c(1,13,2:12)]]
+
+
+aff<-read.table('CAII_affinities_fixed.csv',sep=',',quote = '"',header = TRUE)
+afflog<-aff[,1:2]
+#afflog[,3:8]<-apply(aff[,3:8],1,log10)
+afflog$KiM_avg<-apply(log10(aff[,3:8]),1,mean,na.rm=TRUE)
+afflog$KiM_sd<-apply(log10(aff[,3:8]),1,sd,na.rm=TRUE)
+afflog<-subset(afflog,! HET.ID %in%  c('SO4','SO3','ZN','CL'))
+
+summ<-merge(summ,afflog,by.x='File',by.y='PDB.ID',all.x = TRUE)
+
+
+
+vols<-read.table('Prepared/Volumes.csv',sep=',',quote = '"',header = TRUE)
 vols$File<-toupper(vols$File)
-vols<- transform(vols, File = colsplit(File, "_", names = c('a', 'b')))
-vols$File<-vols$File[[1]]
+vols[,c('File','Chain')]<- transform(vols, File = colsplit(File, "_", names = c('a', 'b')))$File
+vols<-vols[,colnames(vols)[c(1,11,2:10)]]
 
-aff<-read.table('Affinities.csv',sep=',',quote = '"',header = TRUE)
-aff<-rename(aff,c('Ki..nM.'='Ki_nM'))
 
-aff<-aff[,names(aff) %in% c('PDB.ID','Ki_nM')]
-aff$Ki_M<-aff$Ki_nM*10^(-9)
-aff$Lg_Ki_M<-log10(aff$Ki_M)
-
-summ<-read.table('Summary.csv',sep=',',quote = '"',header = TRUE)
-
-summ$File<-toupper(crop$File)
-summ<-transform(crop, File = colsplit(File, "_", names = c('a', 'b')))
-summ$File<-crop$File[[1]]
-summ<-merge(crop,aff,by.x='File',by.y='PDB.ID',all.x = TRUE)
-#uncrop$File<-toupper(uncrop$File)
 
 
 #Structures without ligand

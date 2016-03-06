@@ -2,9 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="91665745-2fa9-443e-994f-6168deb6b456" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../../AandP.py" afterPath="$PROJECT_DIR$/../../AandP.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/../../Fix_affinities.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../../Scrap.py" afterPath="$PROJECT_DIR$/../../Scrap.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../../SeqPrep.py" afterPath="$PROJECT_DIR$/../../SeqPrep.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../../Sequencing.py" afterPath="$PROJECT_DIR$/../../Sequencing.py" />
     </list>
     <ignored path="Sequences.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -28,8 +29,8 @@
       <file leaf-file-name="voltool2.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../../voltool2.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="-6.4444447">
-              <caret line="183" column="59" selection-start-line="183" selection-start-column="16" selection-end-line="183" selection-end-column="59" />
+            <state vertical-scroll-proportion="-5.3703704">
+              <caret line="509" column="131" selection-start-line="509" selection-start-column="130" selection-end-line="509" selection-end-column="131" />
               <folding>
                 <element signature="e#534#569#0" expanded="true" />
               </folding>
@@ -37,12 +38,36 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Sequencing.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="Sequencing.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../../Sequencing.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.8187023">
-              <caret line="198" column="41" selection-start-line="198" selection-start-column="41" selection-end-line="198" selection-end-column="41" />
+            <state vertical-scroll-proportion="-1.1111112">
+              <caret line="2" column="37" selection-start-line="0" selection-start-column="0" selection-end-line="2" selection-end-column="37" />
+              <folding>
+                <element signature="e#491#507#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Scrap.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/../../Scrap.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="-5.3703704">
+              <caret line="16" column="79" selection-start-line="16" selection-start-column="76" selection-end-line="16" selection-end-column="79" />
               <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Fix_affinities.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/../../Fix_affinities.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="0.51403886">
+              <caret line="62" column="35" selection-start-line="62" selection-start-column="35" selection-end-line="62" selection-end-column="35" />
+              <folding>
+                <element signature="e#439#463#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -80,8 +105,8 @@
       <file leaf-file-name="SeqPrep.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../../SeqPrep.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="-15.518518">
-              <caret line="160" column="0" selection-start-line="132" selection-start-column="0" selection-end-line="160" selection-end-column="0" />
+            <state vertical-scroll-proportion="-14.407408">
+              <caret line="163" column="0" selection-start-line="163" selection-start-column="0" selection-end-line="163" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -99,8 +124,10 @@
         <option value="$PROJECT_DIR$/../../SeqCrop.py" />
         <option value="$PROJECT_DIR$/../../SeqSplit.py" />
         <option value="$PROJECT_DIR$/../../AandP.py" />
-        <option value="$PROJECT_DIR$/../../SeqPrep.py" />
         <option value="$PROJECT_DIR$/../../Sequencing.py" />
+        <option value="$PROJECT_DIR$/../../Scrap.py" />
+        <option value="$PROJECT_DIR$/../../SeqPrep.py" />
+        <option value="$PROJECT_DIR$/../../Fix_affinities.py" />
       </list>
     </option>
   </component>
@@ -135,7 +162,7 @@
     <panes />
   </component>
   <component name="PropertiesComponent">
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../AandP.py" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../.." />
     <property name="FullScreen" value="true" />
     <property name="settings.editor.selected.configurable" value="PyConsoleConfigurable.Python Console" />
     <property name="settings.editor.splitter.proportion" value="0.2" />
@@ -148,6 +175,11 @@
         <option name="myModuleName" value="Sequences" />
       </console-settings>
     </option>
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/../.." />
+    </key>
   </component>
   <component name="RunManager">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
@@ -288,16 +320,16 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="0" width="1280" height="800" extended-state="0" />
-    <editor active="true" />
+    <editor active="false" />
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.10098253" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
-      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.2090164" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.2090164" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.117553614" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Terminal" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.329235" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
@@ -344,16 +376,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../voltool2.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-6.4444447">
-          <caret line="183" column="59" selection-start-line="183" selection-start-column="16" selection-end-line="183" selection-end-column="59" />
-          <folding>
-            <element signature="e#534#569#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../../SeqCrop.py">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="-91.77778">
@@ -364,17 +386,47 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/../../SeqPrep.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-15.518518">
-          <caret line="160" column="0" selection-start-line="132" selection-start-column="0" selection-end-line="160" selection-end-column="0" />
+        <state vertical-scroll-proportion="-14.407408">
+          <caret line="163" column="0" selection-start-line="163" selection-start-column="0" selection-end-line="163" selection-end-column="0" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/../../Sequencing.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.8187023">
-          <caret line="198" column="41" selection-start-line="198" selection-start-column="41" selection-end-line="198" selection-end-column="41" />
+        <state vertical-scroll-proportion="-1.1111112">
+          <caret line="2" column="37" selection-start-line="0" selection-start-column="0" selection-end-line="2" selection-end-column="37" />
+          <folding>
+            <element signature="e#491#507#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../Scrap.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="-5.3703704">
+          <caret line="16" column="79" selection-start-line="16" selection-start-column="76" selection-end-line="16" selection-end-column="79" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../voltool2.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="-5.3703704">
+          <caret line="509" column="131" selection-start-line="509" selection-start-column="130" selection-end-line="509" selection-end-column="131" />
+          <folding>
+            <element signature="e#534#569#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../Fix_affinities.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.51403886">
+          <caret line="62" column="35" selection-start-line="62" selection-start-column="35" selection-end-line="62" selection-end-column="35" />
+          <folding>
+            <element signature="e#439#463#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

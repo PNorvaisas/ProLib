@@ -62,3 +62,8 @@ for k in occs.keys():
 writecsv(ocsum,'Occurences_all.csv')
 
 all=list(set(allress))
+
+
+
+
+

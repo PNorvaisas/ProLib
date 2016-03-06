@@ -160,3 +160,12 @@ for ifile in pdbfiles:
     results.extend(res)
 
 writecsv(results,sfile,delim=',')
+
+
+from Sequencing import *
+
+infofile='CAII_info.csv'
+pdbf=open(pdbfile,'r')
+	rdr=csv.reader(pdbf, delimiter=',')
+	data=[row for row in rdr]
+	pdbf.close()
