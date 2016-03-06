@@ -120,37 +120,37 @@ def lcs(S,T):
 
 
 def longmatch(seq,ref):
-    matches={}
-    lseq=[]
-    i=0
-    lstart=0
-    lend=0
-    mlen=0
-    lk=['0:0']
-    for rc in ref:
-        if seq[0]==rc:
-            lseq.append(rc)
-            lend=i
-        else:
-            if len(lseq)>0:
-                key='{}:{}'.format(lstart,lend)
-                matches[key]=''.join(lseq)
-                if len(lseq)>mlen:
-                    lk=[key]
-                    mlen=len(lseq)
-                elif len(lseq)>mlen:
-                    lk.append(key)
-                #print '{} - {}'.format(key,len(lseq))
-                lseq=[]
-            lstart=i+1
-        seq=seq[1:]
-        i=i+1
+	matches={}
+	lseq=[]
+	i=0
+	lstart=0
+	lend=0
+	mlen=0
+	lk=['0:0']
+	for rc in ref:
+		if seq[0]==rc:
+			lseq.append(rc)
+			lend=i
+		else:
+			if len(lseq)>0:
+				key='{}:{}'.format(lstart,lend)
+				matches[key]=''.join(lseq)
+				if len(lseq)>mlen:
+					lk=[key]
+					mlen=len(lseq)
+				elif len(lseq)>mlen:
+					lk.append(key)
+				#print '{} - {}'.format(key,len(lseq))
+				lseq=[]
+			lstart=i+1
+		seq=seq[1:]
+		i=i+1
 
-    if len(lseq)>0:
-        key='{}:{}'.format(lstart,lend)
-        matches[key]=''.join(lseq)
-        lk=[key]
-    return matches,lk
+	if len(lseq)>0:
+		key='{}:{}'.format(lstart,lend)
+		matches[key]=''.join(lseq)
+		lk=[key]
+	return matches,lk
 
 
 def chunkstring(string, length):
@@ -168,30 +168,41 @@ def crop(ifile,mstring,odir,l,ph,keepmols=False,onlyfull=True):
 	#print iname
 	u=MD.Universe(ifile)
 	segids=list(set([segg.id for segg in u.segments]))
+
 	for sname in segids:
+		#print iname, sname
 		chain=u.selectAtoms('segid {}'.format(sname))
 		#print "Segment: {}".format(sname)
 		p=chain.selectAtoms('protein')
+		#print 'Works till here1'
+		#print p.resnames()
 		if len(p.resnames())>0:
-			ress=''.join([ aminoacids[res] if res in aminoacids.keys() else 'X'  for res in p.resnames()])
+			ress=''.join([ aminoacids[res] if res in aminoacids.keys() else 'X' for res in p.resnames()])
 			hetatm=chain.selectAtoms('not protein')
 			# First make alignment with the reference sequence
 			results=align(mstring,ress)
 			matches1,lk1=longmatch(results[1], results[0])
+			if not len(matches1.keys())>0:
+				print '{} {} - no matches!'.format(iname, sname)
+				continue
 			longest1=matches1[lk1[0]]
+
 			if onlyfull and len(longest1)!=len(mstring):
 				print '{} - PDB chain shorter than reference - skipping!'.format(iname)
 				continue
-
 			start1,stop1=(int(nr) for nr in lk1[0].split(':'))
 			#print 'Unadjusted: {}...{}'.format(longest1[:10],longest1[-10:])
 			#print 'Unadjusted start: {} stop: {} length: {}'.format(start1,stop1,stop1-start1+1)
 
 			res2=alignlocal(longest1,ress)
 			matches,lk=longmatch(res2[1], res2[0])
+			if not len(matches.keys())>0:
+				print '{} {} - no matches!'.format(iname, sname)
+				continue
 			longest=matches[lk[0]]
-
 			start,stop=(int(nr) for nr in lk[0].split(':'))
+
+
 			#print 'Adjusted: {}...{}'.format(longest[:10],longest[-10:])
 			#print 'Adjusted start: {} stop: {} length: {}'.format(start,stop,stop-start+1)
 			#Adjust position of residues
@@ -201,64 +212,67 @@ def crop(ifile,mstring,odir,l,ph,keepmols=False,onlyfull=True):
 			resseq=p.residues.resids()[start:stop+1]
 			#start=start+zerores
 			#stop=stop+zerores+1
+			#print 'Works till here2'
+			if resseq[0]!=0 and resseq[-1]!=0:
+				segment=p.selectAtoms("resid {}:{}".format(resseq[0],resseq[-1]))
+				#Test
+				segg=''.join([ aminoacids[res] for res in segment.resnames() ])#if res in aminoacids.keys()
+				#print 'Final: {}...{}'.format(segg[:10],segg[-10:])
+				#print 'Final start: {} stop: {} length: {}'.format(start,stop,stop-start)
 
+				aligned=''
+				#print chunkstring(results[1],50)
+				#print results[1]
+				for a,b in IT.izip(chunkstring(results[1],50),chunkstring(results[0],50)):
+					aligned=aligned+'PDB '+a+'\nRef '+b+'\n\n'
+				# print aligned
+				#print "Length of longest matching chain: {}\n".format(len(segment.resnames()))
+				#print "Longest matching chain:\n{}".format('\n'.join(tw.wrap(segg,50)))
+				#print "Match length: {}".format(len(segg))
+				#l for ligands
+				if len(l)>0:
+					lsel=[rid for rid in list(set(hetatm.resnames())) if rid in l]
+				else:
+					lsel=[]
+				#ph for protein heteroatoms
+				if len(ph)>0:
+					psel=[rid for rid in list(set(hetatm.resnames())) if rid in ph]
+				else:
+					psel=[]
+				#All heteroatoms
+				hsel=lsel+psel
 
-			segment=p.selectAtoms("resid {}:{}".format(resseq[0],resseq[-1]))
-			#Test
-			segg=''.join([ aminoacids[res] for res in segment.resnames() ])#if res in aminoacids.keys()
-			#print 'Final: {}...{}'.format(segg[:10],segg[-10:])
-			#print 'Final start: {} stop: {} length: {}'.format(start,stop,stop-start)
-
-			aligned=''
-			#print chunkstring(results[1],50)
-			#print results[1]
-			for a,b in IT.izip(chunkstring(results[1],50),chunkstring(results[0],50)):
-				aligned=aligned+'PDB '+a+'\nRef '+b+'\n\n'
-			# print aligned
-			#print "Length of longest matching chain: {}\n".format(len(segment.resnames()))
-			#print "Longest matching chain:\n{}".format('\n'.join(tw.wrap(segg,50)))
-			#print "Match length: {}".format(len(segg))
-			#l for ligands
-			if len(l)>0:
-				lsel=[rid for rid in list(set(hetatm.resnames())) if rid in l]
-			else:
-				lsel=[]
-			#ph for protein heteroatoms
-			if len(ph)>0:
-				psel=[rid for rid in list(set(hetatm.resnames())) if rid in ph]
-			else:
-				psel=[]
-			#All heteroatoms
-			hsel=lsel+psel
-
-			if len(hsel)>0:
-				hcrops=[hetatm.selectAtoms('resname {}'.format(hname)) for hname in hsel]
-				#print '{} {}'.format(len(l),len(hcrops))
-				if len(hcrops)==1:
-					hatoms=hcrops[0]
-				elif len(hcrops)>1:
-					hcrop=MD.Merge(*hcrops)
-					hatoms=hcrop
+				if len(hsel)>0:
+					hcrops=[hetatm.selectAtoms('resname {}'.format(hname)) for hname in hsel]
+					#print '{} {}'.format(len(l),len(hcrops))
+					if len(hcrops)==1:
+						hatoms=hcrops[0]
+					elif len(hcrops)>1:
+						hcrop=MD.Merge(*hcrops)
+						hatoms=hcrop
+					else:
+						hatoms=''
 				else:
 					hatoms=''
-			else:
-				hatoms=''
 
-			if len(hatoms)>0:
-				chop=MD.Merge(segment,hatoms)
-			elif len(hetatm)>0 and keepmols:
-				chop=MD.Merge(segment,hetatm)
+				if len(hatoms)>0:
+					chop=MD.Merge(segment,hatoms)
+				elif len(hetatm)>0 and keepmols:
+					chop=MD.Merge(segment,hetatm)
+				else:
+					chop=segment
+				#print 'Works till here3'
+				chop.atoms.write('{}/{}.pdb'.format(odir,iname)) #,mstring[0:4],str(len(mstring))
+				logf=open('{}/{}_{}{}_log.txt'.format(odir,iname,mstring[0:4],str(len(mstring))),'w')
+				log="Input PDB: {}\nReference amino acid chain:\n{}\n\nAlignment:\n{}\nLongest match: {}\nLongest matching chain:\n{}\nPDB:\n{}\nReference:\n{}".format(ifile,'\n'.join(tw.wrap(mstring,50)),aligned,len(segment.resnames()),'\n'.join(tw.wrap(segg,50)),results[1],results[0])
+				logf.write(log)
+				logf.close()
+				outdata.append([iname,'Ref',len(segment.resnames()),results[0],segg])
+				outdata.append([iname,sname,len(segment.resnames()),results[1],segg])
+				info.append([iname,sname,sname,';'.join(lsel),';'.join(psel)])
 			else:
-				chop=segment
-
-			chop.atoms.write('{}/{}.pdb'.format(odir,iname)) #,mstring[0:4],str(len(mstring))
-			logf=open('{}/{}_{}{}_log.txt'.format(odir,iname,mstring[0:4],str(len(mstring))),'w')
-			log="Input PDB: {}\nReference amino acid chain:\n{}\n\nAlignment:\n{}\nLongest match: {}\nLongest matching chain:\n{}\nPDB:\n{}\nReference:\n{}".format(ifile,'\n'.join(tw.wrap(mstring,50)),aligned,len(segment.resnames()),'\n'.join(tw.wrap(segg,50)),results[1],results[0])
-			logf.write(log)
-			logf.close()
-			outdata.append([iname,'Ref',len(segment.resnames()),results[0],segg])
-			outdata.append([iname,sname,len(segment.resnames()),results[1],segg])
-			info.append([iname,sname,sname,';'.join(lsel),';'.join(psel)])
+				print 'No overlap between sequences!'
+				continue
 
 	return outdata, info
 

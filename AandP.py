@@ -138,7 +138,7 @@ def main(argv=None):
 				if len(pqrfl)==0:
 					raise Exception("No *.%(itype)s files found in working directory!" % vars())
 				else:
-					print "Found {} files working directory!".format(len(pqrfl))
+					print "Found {} files in working directory!".format(len(pqrfl))
 			elif not os.path.exists(ifile):
 				raise Exception("Input file or directory does not exist.")
 			elif os.path.isfile(ifile):

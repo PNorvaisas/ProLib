@@ -52,6 +52,7 @@ os.chdir('/Users/povilas/Projects/ProLib/Hsp90aN')#
 #Define file containing reference sequence for protein
 ref_file='CAII-P00918_frag.fasta'
 ref_file='Hsp90aN_seq.fasta'
+ref_file='Crop_159.fasta'
 ref=readseq(ref_file)
 pdbfiles=glob.glob('*.pdb')
 
@@ -130,12 +131,16 @@ bestmatch.write(bm)
 bestmatch.close()
 
 
+os.chdir('/Users/povilas/Projects/ProLib/CDK/CDK2')
 
 #You can use other sequence file for cropping
 #crop_file='CAII-P00918_frag.fasta'
+crop_file='Crop_159.fasta'
 cropseq=readseq(crop_file)
-cropseq=bm
+#cropseq=bm
 
+pdbfiles=glob.glob('*.pdb')
+pdbfiles=['1ol1.pdb']
 
 #Name the summary file according the first 4 letters of the seuence and its length (useful to remember what was happening)
 sfile='Summary_{}{}.csv'.format(cropseq[0:4],str(len(cropseq)))
@@ -145,13 +150,13 @@ rhead=['PDB ID','Segment','Match length','Alignment','Cropped']
 results.append(rhead)
 results.append(['Ref','Ref',len(cropseq),cropseq,cropseq])
 
-odir=dircheck('Cropped')
+odir=dircheck('Cropped',dansw='c')
 #Crop loop for each PDB structure.
 # crop function has default options:
 #keepmols=False - don't keep heteroatoms
 #onlyfull=True - make crop only for completely matching structures
 for ifile in pdbfiles:
-    res=crop(ifile,cropseq,odir)
+    res=crop(ifile,cropseq,odir,[],[])
     results.extend(res)
 
 writecsv(results,sfile,delim=',')
