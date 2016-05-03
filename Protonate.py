@@ -12,7 +12,7 @@ def ensure_dir(f):
 odir="Aligned-Protonated"
 ensure_dir(odir)
 # change to folder with data files
-#sos.chdir("/Users/pett/data")
+#os.chdir("/Users/pett/data")
 
 # gather the names of .pdb files in the folder
 file_names = [fn for fn in os.listdir(".") if fn.endswith(".pdb")]
@@ -42,19 +42,5 @@ if len(fprot)>0:
 	for item in fails:
 		fails.write("%s\n" % item)
 	fprot.close()
-#for modin in range(len(chimera.openModels.list())):
-#	rc("select " + str(modin))
-#	if modin>0:
-#		rc("mm #0 #"+str(modin)+" computeSS false")
-#	rc("addh")
-#	rc("write "+str(modin)+" "+str(modin))
-	
-#print len(chimera.openModels.list())
 
 rc("close all")
-# uncommenting the line below will cause Chimera to exit when the script is done
-#rc("stop now")
-# note that indentation is significant in Python; the fact that
-# the above command is exdented means that it is executed after
-# the loop completes, whereas the indented commands that 
-# preceded it are executed as part of the loop.

@@ -13,13 +13,13 @@ library(cluster)
 library(Cairo)
 
 #Read summary of volumes
-summ<-read.table('Prepared/Summary.csv',sep=',',quote = '"',header = TRUE)
-summ$File<-toupper(summ$File)
-summ[,c('File','Chain')]<- transform(summ, File = colsplit(File, "_", names = c('a', 'b')))$File
-summ<-summ[,colnames(summ)[c(1,13,2:12)]]
+summr<-read.table('Prepared/Summary.csv',sep=',',quote = '"',header = TRUE)
+summr$File<-toupper(summr$File)
+summr[,c('File','Chain')]<- transform(summr, File = colsplit(File, "_", names = c('a', 'b')))$File
+summr<-summr[,colnames(summ)[c(1,13,2:12)]]
 
 #Read inof from RSCB
-pdbinfo<-read.table('CAII_info.csv',sep=',',quote = '"',header = TRUE)
+pdbinfo<-read.table('Hsp90aN_info.csv',sep=',',quote = '"',header = TRUE)
 pdbinfo<-pdbinfo[,c('PDB.ID','Resolution','Structure.MW','Residue.Count')]
 
 
@@ -36,6 +36,8 @@ subset(pdb,is.na(Heteroatoms))
 #Read affinties
 #aff<-read.table('CAII_affinities_fixed.csv',sep=',',quote = '"',header = TRUE)
 aff<-read.table('Hsp90aN_affinities_fixed.csv',sep=',',quote = '"',header = TRUE)
+aff<-aff[!duplicated(aff), ]
+
 afflog<-aff[,1:2]
 #afflog[,3:8]<-apply(aff[,3:8],1,log10)
 afflog$KiM_avg<-apply(log10(aff[,3:length(colnames(aff))]),1,mean,na.rm=TRUE)
@@ -46,14 +48,14 @@ afflog<-subset(afflog,! HET.ID %in%  c('SO4','SO3','ZN','CL'))
 #Show structures with multiple ligands
 subset(afflog,PDB.ID %in% afflog[which(duplicated(afflog$PDB.ID)),]$PDB.ID)
 
+
 #Remove unwanted duplicates for structures with multiple ligands
-afflog<-subset(afflog, !(PDB.ID=='1AVN' & HET.ID=='AZI'))
-afflog<-subset(afflog, !(PDB.ID=='3CYU' & HET.ID=='0CR'))
-afflog<-subset(afflog, !(PDB.ID=='3T83' & HET.ID=='MG5'))
+affclean<-subset(afflog, !(PDB.ID=='2QFO' ))
+
 
 
 #Get data together for summary and affinities
-summ<-merge(summ,afflog,by.x='File',by.y='PDB.ID',all.x = TRUE)
+summ<-merge(summr,affclean,by.x='File',by.y='PDB.ID',all.x = TRUE)
 summ<-merge(summ,pdbinfo,by.x='File',by.y='PDB.ID',all.x = TRUE)
 summ$HasLigand<-TRUE
 #Mark which structures have ligands
@@ -93,7 +95,8 @@ plot(mregression)
 
 
 #'Melt' data - convert columns to rows with volume type being factor variable
-sum_melt<-melt(summ,id.vars=colnames(summ)[c(1:6,13:20)], measure.vars = colnames(summ)[c(7:12,21:24)], variable.name = 'Volume_type' , value.name='Volume')
+sum_melt<-melt(summ,id.vars=colnames(summ)[c(1:7,14:20)], measure.vars = colnames(summ)[c(8:13,21:24)],
+               variable.name = 'Volume_type', value.name='Volume')
 sum_melt$Volume_type<-factor(sum_melt$Volume_type,
                              levels = c('Cavity.volume..A.3','Cleft.volume..A.3','Total.surface..A.2',
                                         'Protein.volume..A.3','Solvent.accessible.volume..A.3','VdW.volume..A.3',
@@ -119,7 +122,8 @@ voltaff<-ggplot(subset(sum_melt,Volume_type %in% c('Protein','VdW')),
 voltaff
 dev.copy2pdf(device=cairo_pdf,file="Figures/Volumes_vs_affinities.pdf",width=8,height=6)
 
-volraff<-ggplot(subset(sum_melt,Volume_type %in% c('Cavities/VdW','Clefts/VdW','All empty/VdW') & Resolution<2),
+volrat<-subset(sum_melt,Volume_type %in% c('Cavities/VdW','Clefts/VdW','All empty/VdW')& Resolution<2)
+volraff<-ggplot( volrat,
                 aes(x=KiM_avg,y=Volume))+
   geom_errorbarh(aes(xmax=KiM_avg+KiM_sd,xmin=KiM_avg-KiM_sd),height=.001,alpha=0.2)+
   geom_point()+facet_grid(. ~Volume_type)+stat_smooth(method = "lm")+
@@ -133,7 +137,9 @@ dev.copy2pdf(device=cairo_pdf,file="Figures/Ratios_vs_affinities.pdf",width=8,he
 #Analysis of cavities
 onlyP<-subset(vols,Fragment=='P')
 rownames(onlyP)<-paste(onlyP$File,'-',onlyP$Chain,'_',onlyP$Cavity.number,sep='')
+onlyP<-merge(onlyP,pdbinfo,by.x='File',by.y='PDB.ID')
 filenames<-as.character(unique(onlyP$File))
+onlyP$Index<-paste(onlyP$File,onlyP$Chain,sep='-')
 
 
 #volcor<-round(cor(onlyP[,c(6,8:10)]),2)
@@ -150,7 +156,7 @@ plot3d(onlyP[,c('x','y','z')], col=ifelse(onlyP$Type=='cavity','red','blue'),xla
 
 
 #Clustering part
-clusts<-10
+clusts<-5
 
 #Hierarchical clustering
 di <- dist(onlyP[,c(7:9)], method="euclidean")
@@ -166,17 +172,19 @@ plot3d(onlyP[,c('x','y','z')], col=onlyP$hcluster,xlab='X',ylab='Y',zlab='Z')
 #rgl.postscript( '3D_clust', fmt = "pdf", drawText = TRUE )
 
 #Volume distribution
-voldist<-ggplot(onlyP,aes(x=hcluster,y=Volume,color=Type))+geom_point(size=3)+geom_boxplot()   #geom_point(aes(x=subset(onlyP,File=='1uyl')$hcluster,y=subset(onlyP,File=='1uyl')$Volume,shape="1UYL"),color="red")
-voldist+labs(color='Volumes')+xlab('Cluster')+ylab(expression(paste("Volume, ",ring(A)^3)))
+voldist<-ggplot(onlyP,aes(x=hcluster,y=Volume,color=Type))+
+  geom_point(size=3)+geom_boxplot()+
+  labs(color='Volumes')+xlab('Cluster')+ylab(expression(paste("Volume, ",ring(A)^3)))
+voldist
 dev.copy2pdf(device=cairo_pdf,file=paste('Figures/Cluster_vol_dist_',clusts,'.pdf',sep=''),width=8,height=6)
-
+#geom_point(aes(x=subset(onlyP,File=='1uyl')$hcluster,y=subset(onlyP,File=='1uyl')$Volume,shape="1UYL"),color="red")
 
 clusters_C<-ddply(onlyP, .(hcluster), summarise, x=mean(x), y=mean(y), z=mean(z), Volume=mean(Volume))
 write.csv(onlyP,file=paste('Centers/CavCl_centers_',clusts,'.csv',sep=''))
 write.csv(clusters_C,file=paste('Centers/Cluster_centers_',clusts,'.csv',sep=''))
 
 #Data prep
-file_clusters<-ddply(onlyP, .(File,Chain,hcluster), summarise, x=mean(x), y=mean(y), z=mean(z), Volume=sum(Volume))
+file_clusters<-ddply(onlyP, .(File,Index,Chain,hcluster,Resolution), summarise, x=mean(x), y=mean(y), z=mean(z), Volume=sum(Volume))
 
 
 
@@ -184,16 +192,18 @@ file_clusters<-ddply(onlyP, .(File,Chain,hcluster), summarise, x=mean(x), y=mean
 affinities<-merge(file_clusters,afflog,by.x = 'File',by.y = 'PDB.ID')#,all.x = TRUE,all.y=TRUE
 affinities<-subset(affinities,!is.na(KiM_avg))
 
-affcor<-ggplot(affinities,aes(y=Volume,x=KiM_avg))+
+#subset(affinities,Resolution<=2)
+affcor<-ggplot(affinities,aes(y=Volume,x=KiM_avg,color=Resolution))+
   geom_point()+stat_smooth(aes(group = 1),method = "lm")+
-  ylab(expression(paste("Volume, ",ring(A)^3)))+xlab('Log Ki, M')
-affcor+facet_grid(.~'Cluster'+hcluster)
+  ylab(expression(paste("Volume, ",ring(A)^3)))+xlab('Log Ki, M')+
+  facet_grid(.~'Cluster'+hcluster)+labs(color=expression(paste("Resolution, ",ring(A))))
+affcor
 dev.copy2pdf(device=cairo_pdf,file=paste('Figures/Ki-Vol_corr_',clusts,'.pdf',sep=''),width=8,height=6)
 
 
-volaff<-dcast(affinities,File+Chain +KiM_avg+KiM_sd ~ hcluster,sum,value.var = 'Volume')
-cavregression<-lm(volaff$KiM_avg~volaff$'1'+volaff$'2'+volaff$'3'+volaff$'4'+volaff$'5'+volaff$'6'+volaff$'7',data=volaff)
-
+volaff<-dcast(affinities,File+Index+Chain +KiM_avg+KiM_sd ~ hcluster,sum,value.var = 'Volume')
+cavregression<-lm(volaff$KiM_avg~volaff$'1'+volaff$'2'+volaff$'3'+volaff$'4'+volaff$'5',data=volaff)
+#+volaff$'7' +volaff$'6'
 volaff$KiM_predict<-predict(cavregression,volaff)
 ggplot(volaff, aes(x=KiM_avg,y=KiM_predict))+
   geom_point()+stat_smooth(method='lm')+
@@ -213,7 +223,7 @@ rect <- aggregate(x~cluster,label(dendr),range)
 rect <- data.frame(rect$cluster,rect$x)
 ymax <- mean(tree$height[length(tree$height)-((clusts-2):(clusts-1))])
 
-ggplot() + 
+denplot<-ggplot() + 
   geom_segment(data=segment(dendr), aes(x=x, y=y, xend=xend, yend=yend)) + 
   geom_text(data=label(dendr), aes(x, y, label=label, hjust=0, color=cluster), 
             size=0.5) +
@@ -223,42 +233,50 @@ ggplot() +
   guides(colour = guide_legend(override.aes = list(size=5))) +
   coord_flip() + scale_y_reverse(expand=c(0.2, 0)) + theme_dendro()+
   ggtitle(paste('Hierarchical clustering of cavities and clefts by their coordinates with',clusts,'clusters'))
+denplot
 dev.copy2pdf(device=cairo_pdf,file=paste('Figures/Cluster_dendrogram_',clusts,'.pdf',sep=''),width=8,height=8)
 
 
 
-
-
-
-
-
 #For correlation
-aligned<-merge(file_clusters[,!names(file_clusters) %in% c('x','y','z')],file_clusters[,!names(file_clusters) %in% c('x','y','z')],by = 'hcluster')
-aligned<-rename(aligned,c('File.x'='Reference','File.y'='Target','Volume.x'='Volume_R','Volume.y'='Volume_T'))
+aligned<-merge(file_clusters[,!names(file_clusters) %in% c('x','y','z')],
+               file_clusters[,!names(file_clusters) %in% c('x','y','z')],by = 'hcluster')
+aligned<-rename(aligned,c('File.x'='Reference_F','File.y'='Target_F','Volume.x'='Volume_R','Volume.y'='Volume_T',
+                          'Resolution.x'='Resolution_R','Resolution.y'='Resolution_T',
+                          'Chain.x'='Chain_R','Chain.y'='Chain_T',
+                          'Index.x'='Reference','Index.y'='Target'))
 
-filesel<-unique(file_clusters$File)
-#what is happening here???
+filesel<-unique(file_clusters$Index)
+#Cluster correlation comparison example
 vran<-0:5
 onlycor<-subset(aligned,Reference %in% filesel[vran] & Target %in% filesel[vran])
-volcor<-ggplot(onlycor,aes(x=Volume_R,y=Volume_T,color=hcluster))+geom_point()+stat_smooth(aes(group = 1),method = "lm")+xlim(0,100)+ylim(0,100)
-volcor+facet_grid(Reference~Target)+xlab(expression(paste("Volume, ",ring(A)^3)))+ylab(expression(paste("Volume, ",ring(A)^3)))+labs(color='Cluster')
-#dev.copy2pdf(device=cairo_pdf,file="Cluster_sidebyside.pdf",width=8,height=7)
+volcor<-ggplot(onlycor,aes(x=Volume_R,y=Volume_T,color=hcluster))+
+  geom_point()+stat_smooth(aes(group = 1),method = "lm")+xlim(0,100)+ylim(0,100)+
+  facet_grid(Reference~Target)+xlab(expression(paste("Volume, ",ring(A)^3)))+
+  ylab(expression(paste("Volume, ",ring(A)^3)))+labs(color='Cluster')
+volcor
+dev.copy2pdf(device=cairo_pdf,file="Figures/Cluster_comparison_example.pdf",width=8,height=7)
 
 
 
 
-voldist2<-ggplot(file_clusters,aes(x=hcluster,y=Volume))+geom_boxplot()+geom_point(data=subset(file_clusters,File %in% subset(summ,HasLigand==FALSE)$File),aes(color=File),size=3)
-voldist2+labs(color='Structures without ligand')+xlab('Cluster')+ylab(expression(paste("Volume, ",ring(A)^3)))
-#dev.copy2pdf(device=cairo_pdf,file="Cluster_variation.pdf",width=8,height=6)
+voldist2<-ggplot(file_clusters,aes(x=hcluster,y=Volume))+geom_boxplot()+
+  geom_point(data=subset(file_clusters,File %in% subset(summ,HasLigand==FALSE)$File),
+             aes(color=File),size=3)+
+  labs(color='Structures without ligand')+xlab('Cluster')+
+  ylab(expression(paste("Volume, ",ring(A)^3)))
+voldist2
+dev.copy2pdf(device=cairo_pdf,file="Figures/Cluster_variation.pdf",width=8,height=6)
 
 
 
 onlyP$CC<-1
 
 getclusts<-function(onlyP,variable,vols){
-  presence<-dcast(onlyP, File  ~ hcluster, sum, value.var=variable)
-  rownames(presence)<-presence$File
-  presence$File<-NULL
+  presence<-dcast(onlyP, Index  ~ hcluster, sum, value.var=variable)
+  head(presence)
+  rownames(presence)<-presence$Index
+  presence$Index<-NULL
   presence<-as.matrix(presence)
   mode(presence)<-'numeric'
   if (!vols){
@@ -323,7 +341,7 @@ filler <- function(frame,names){
 
 
 
-res<-filler(clvols,filenames)
+res<-filler(clvols,filesel)
 #R<-res$R
 #a<-res$a
 
@@ -332,4 +350,5 @@ res<-filler(clvols,filenames)
 heatmap.2(as.matrix(res$R),Colv=TRUE,Rowv=TRUE,trace='none',col=heat.colors(64),
           xlab="Structure 1",ylab='Structure 2',key=TRUE,scale='none',
           dendrogram=,na.color="grey",symm = TRUE,cexRow=0.5,cexCol=0.5)
-CairoSVG(file = "Figures/Heatmap_R.svg", width = 6, height = 6)
+dev.copy2pdf(device=cairo_pdf,file=paste("Figures/Heatmap_R-",clusts,".pdf",sep=''),width=12,height=12)
+#CairoSVG(file = paste("Figures/Heatmap_R",clusts,".svg",sep=''), width = 6, height = 6)

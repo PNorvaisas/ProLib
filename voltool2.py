@@ -47,15 +47,16 @@ Flags:
 	-v  Verbose output
 Arguments:
 	-i <file>    Name of input file (structure or text), or .pdb/.pqr to get all pdb/pqr files
-	-s <file>    Name of McVol settings file (if not given default settings will be used)
+	-s <file>    McVol settings file or update. Also can be comma separated settings:values (ex. probe:1.3,nmc:200)
 	-p <file>    PDB info file to use (contains information about the structure of PDB files and ligand choices)
 				 Will be generated in the directory for each run, default name "PDB_info.txt"
 	-c <cores>   Number of cores to use
 
 Options:
-	pqr	     Only convert selected files to pqr 
+	pqr	    	 Only convert selected files to pqr
 	mcvol	     Calculate volumes
 	analyze	     Analyze McVol output and generate tables
+	mcvolanalyze Run calculation and anlysis consequently
 	 
 
 Settings:
@@ -102,9 +103,7 @@ def main(argv=None):
 	#Settings template file
 	settmp=''
 	#Generate settings file from default values provided in dset map object
-	for ds in dset.keys():
-		#print ds, dset[ds]
-		settmp=settmp+'{} {}\n'.format(ds,dset[ds])
+
 	#Input file
 	ifile=""
 	#Settings file
@@ -165,6 +164,12 @@ def main(argv=None):
 				mcvol=False
 				pqr=False
 				load=False
+			if argument in ("mcvolanalyze", "--mcvolanalyze"):
+				#Analyse output of mcvol
+				doanalyze = True
+				mcvol=True
+				pqr=False
+				load=False
 
 
 
@@ -220,15 +225,42 @@ def main(argv=None):
 	#----------------------------
 
 
+
 	print optionsset %vars()
 
 
-	if sfile!='' and os.path.isfile(ifile):
-		spath, sname, stype = filename(sfile)
-		setf=open(sfile,'r')
-		settmp=setf.read()
-		setf.close()
 
+
+	if sfile!='':
+		#Modify default McVol settings using file
+		if os.path.isfile(ifile):
+			spath, sname, stype = filename(sfile)
+			with open(sfile) as f:
+				scontents = f.readlines()
+			scontents=[line.split('!')[0].strip() for line in scontents if line!='']
+			nset={ln.split(' ')[0]:ln.split(' ')[1] for ln in scontents if ln.split(' ')[0] in dset.keys()}
+			mods=True
+			# setf=open(sfile,'r')
+			# settmp=setf.read()
+			# setf.close()
+		#Modify default McVol settings using string of changes
+		elif sfile!='' and ':' in sfile:
+			nset={ ln.split(':')[0]:ln.split(':')[1] for ln in sfile.split(',') if ln.split(':')[0] in dset.keys()}
+			mods=True
+		else:
+			print 'Settings: {} could not be parsed!'.format(sfile)
+			nset={}
+			mods=False
+		if mods:
+			print 'Updating McVol settings!'
+			for key in nset.keys():
+				print 'Update {}: {} -> {}'.format(key,dset[key],nset[key])
+				dset[key]=nset[key]
+
+	for ds in dset.keys():
+	#print ds, dset[ds]
+		settmp=settmp+'{} {}\n'.format(ds,dset[ds])
+	#sys.exit(1)
 
 
 	ilist=genlist(ifile)

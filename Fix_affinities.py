@@ -40,7 +40,7 @@ hmap={hl : header.index(hl) for hl in hlabs if hl in header }
 data=[row for row in data if len(row)!=0 and (row[hmap['Ki (nM)']]!='' or row[hmap['Kd (nM)']]!='')]
 vallen=0
 for row in data[1:]:
-	print row[hmap['PDB ID']],row[hmap['HET ID']],'Ki:', row[hmap['Ki (nM)']],'Kd:', row[hmap['Kd (nM)']]
+	#print row[hmap['PDB ID']],row[hmap['HET ID']],'Ki:', row[hmap['Ki (nM)']],'Kd:', row[hmap['Kd (nM)']]
 	kis=[ val.strip().split(' ')[0].strip() for val in row[hmap['Ki (nM)']].split(',')] #.split(' ')[0].strip()
 	kds=[ val.strip().split(' ')[0].strip() for val in row[hmap['Kd (nM)']].split(',')] #.split(' ')[0].strip()
 	kis=[ val.split('-') if '-' in val else [val] for val in kis]
@@ -57,9 +57,12 @@ for row in data[1:]:
 			valu=clean(valu)
 			if valu!='':
 				kdsc.append(valu)
-	logki=np.power(10,(np.log10(kisc)-9))
-	logkid=np.power(10,(1/np.log10(kdsc))-9 )
-	print logki, logkid
+	logki=np.power(10,np.log10(kisc)-9)
+	logkid=np.power( 10,np.log10( 1/np.asarray(kdsc)) - 9 )
+	if row[hmap['HET ID']]=='EZL':
+		print row[hmap['PDB ID']],row[hmap['HET ID']],'Ki:', row[hmap['Ki (nM)']],'Kd:', row[hmap['Kd (nM)']]
+		print kisc, kdsc, np.log10(kdsc)
+		print logki, logkid
 	values=list(logki)+list(logkid)
 	if len(values)>vallen:
 		vallen=len(values)

@@ -48,7 +48,7 @@ Flags:
 	-h  Display this help message
 	-v  Verbose output
 Arguments:
-	-i <file>    Name of input file (structure or text), or .pdb/.pqr to get all pdb/pqr files
+	-i <file>    Name of input file (structure or text containing list of files), or .pdb to get all pdb files
 	-r <file>    Reference sequence file
 	-c <cores>   Number of cores to use
 	-o <dir>     Output directory
@@ -68,6 +68,7 @@ optionsset='''
 Options:
 <--------------------------------------------->
     Input:	%(ifile)s
+Reference:	%(rfile)s
       Out:  %(odir)s
     Cores:  %(cores)s
 <--------------------------------------------->

@@ -10,8 +10,8 @@ def ensure_dir(f):
         os.makedirs(f)
 
 
-odir='$odir'
-#odir='Aligned-protonated'
+#odir='$odir'
+odir='Aligned-protonated'
 ensure_dir(odir)
 
 fails=[]
@@ -21,10 +21,10 @@ for mol in chimera.openModels.list():
 	print mol.name
 	print mol.id
 
-if nomodels>1:
-	models=chimera.openModels.list()[1:]
-else:
-	models=chimera.openModels.list()
+# if nomodels>1:
+# 	models=chimera.openModels.list()[1:]
+# else:
+models=chimera.openModels.list()
 
 for mol in models:
 	print "Working on {}".format(mol.name)
@@ -34,7 +34,7 @@ for mol in models:
 	except:
 		print "Protonation unsuccessful!"
 		fails.append(mol.name)
-	if nomodels>1:
+	if models.index(mol)>0:
 		rc("mm #0 #"+str(mol.id)+" computeSS false")
 	rc("write "+str(mol.id)+" "+odir+"/"+str(mol.name))
 

@@ -41,17 +41,18 @@ from voltool2 import *
 
 
 help_message = '''
-SeqSplit.py
-PDB analysis and split to segments
+SeqCrop.py
+PDB crop according to reference sequence
 
 Flags:
 	-h  Display this help message
 	-v  Verbose output
 Arguments:
-	-i <file>    Name of input file (structure or text), or .pdb/.pqr to get all pdb/pqr files
+	-i <file>    Name of input file (structure or text), or .pdb to get all pdb files
 	-r <file>    Reference sequence file
 	-c <cores>   Number of cores to use
 	-l <Res>     Leave heteroatoms, comma separated values
+	-p <Res>     Leave heteroatoms belonging to protein (like metal ions), comma separated values
 	-o <dir>     Output directory
 '''
 

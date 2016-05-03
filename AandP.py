@@ -50,9 +50,9 @@ Flags:
 	-h  Display this help message
 	-v  Verbose output
 Arguments:
-	-i <file>    Name of input file (structure or text), or .pdb/.pqr to get all pdb/pqr files
+	-i <file>    Name of input file (structure or text), or .pdb to get all pdb files
 	-s <file>    Python script to execute in Chimera
-	-b <batch>   Number of files for one instance of chimera
+	-b <batch>   Number of files opened in one instance of Chimera
 	-c <cores>   Number of cores to use
 
 '''
